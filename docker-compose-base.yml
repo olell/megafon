@@ -1,0 +1,13 @@
+services:
+  mariadb:
+    image: mariadb
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      start_period: 300s
+    environment:
+      MARIADB_RANDOM_ROOT_PASSWORD: yes
+      MARIADB_USER: megafon
+      MARIADB_DATABASE: megafon
+      MARIADB_PASSWORD: megafon
+    ports:
+      - 127.0.0.1:3306:3306
