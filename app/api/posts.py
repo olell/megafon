@@ -38,7 +38,6 @@ def get_post(*, session: SessionDep, post_id: uuid.UUID, user: CurrentUser):
 def get_posts(
     *,
     session: SessionDep,
-    user: CurrentUser,
     since: Optional[datetime] = None,
     max_hours: int = 24,
     limit: int = 1000,
