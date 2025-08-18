@@ -3,21 +3,11 @@
 	import { getPostsApiV1PostsGet, type Post } from '../client';
 	import CreatePost from '../components/createPost.svelte';
 	import PostComponent from '../components/post.svelte';
+	import { all_posts, refreshPosts } from '../sharedState.svelte';
 
 	let createPostOpen = $state(false);
 
-	let posts = $state<Post[]>([]);
-
-	const refreshPosts = () => {
-		getPostsApiV1PostsGet({ query: { order: 'newest' } }).then(({ data, error }) => {
-			if (!!error) {
-				// handle TODO
-			}
-			posts = data!;
-		});
-	};
 	$effect(refreshPosts);
-
 	$effect(() => {
 		const interval = setInterval(refreshPosts, 10000);
 		return () => {
@@ -26,10 +16,10 @@
 	});
 </script>
 
-<CreatePost {refreshPosts} bind:isOpen={createPostOpen} parent={null} />
+<CreatePost bind:isOpen={createPostOpen} parent={null} />
 
 <div style="padding-bottom: 100px;">
-	{#each posts as post (post.id)}
+	{#each all_posts.val as post (post.id)}
 		<PostComponent {post} />
 	{/each}
 </div>

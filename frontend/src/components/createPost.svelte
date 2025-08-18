@@ -10,8 +10,9 @@
 	} from '@sveltestrap/sveltestrap';
 	import { push_api_error, push_message } from '../messageService.svelte';
 	import { createPostApiV1PostsPost, initSessionApiV1UserPost } from '../client';
+	import { refreshPosts } from '../sharedState.svelte';
 
-	let { isOpen = $bindable(), parent, refreshPosts } = $props();
+	let { isOpen = $bindable(), parent } = $props();
 
 	let value = $state('');
 	const toggle = () => {
