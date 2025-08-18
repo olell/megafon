@@ -334,6 +334,22 @@ export type FlagApiV1PostsFlagPostResponses = {
     200: unknown;
 };
 
+export type GetSessionApiV1UserGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/user/';
+};
+
+export type GetSessionApiV1UserGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: User;
+};
+
+export type GetSessionApiV1UserGetResponse = GetSessionApiV1UserGetResponses[keyof GetSessionApiV1UserGetResponses];
+
 export type InitSessionApiV1UserPostData = {
     body: SessionInit;
     path?: never;
