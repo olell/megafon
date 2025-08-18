@@ -5,7 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import Session
 
 from app.core.config import settings
-from app.core.db import engine, init_db
+from app.core.db import drop_db, engine, init_db
+from app.api.main import router as api_router
 
 
 @asynccontextmanager
@@ -14,6 +15,9 @@ async def lifespan(app: FastAPI):
         init_db(session)
 
     yield
+
+    if settings.LIFESPAN_DROP_DB:
+        drop_db(engine)
 
 
 logging.basicConfig(
@@ -39,3 +43,5 @@ if settings.all_cors_origins:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+app.include_router(api_router, prefix=settings.API_V1_STR)

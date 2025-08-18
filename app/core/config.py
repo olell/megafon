@@ -61,6 +61,8 @@ class Settings(BaseSettings):
     DATABASE_PASSWORD: str = ""
     DATABASE_DB: str = ""
 
+    LIFESPAN_DROP_DB: bool = False
+
     @computed_field  # type: ignore[prop-decorator]
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> str:
