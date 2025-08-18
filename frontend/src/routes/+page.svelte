@@ -28,9 +28,11 @@
 
 <CreatePost {refreshPosts} bind:isOpen={createPostOpen} parent={null} />
 
-{#each posts as post (post.id)}
-	<PostComponent {post} />
-{/each}
+<div style="padding-bottom: 100px;">
+	{#each posts as post (post.id)}
+		<PostComponent {post} />
+	{/each}
+</div>
 
 <Button color="warning" class="fs-4 fab" onclick={() => (createPostOpen = true)}>
 	<Icon name="chat-square-text-fill"></Icon>
