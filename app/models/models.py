@@ -87,9 +87,7 @@ class Vote(SQLModel, table=True):
     post_id: Optional[uuid.UUID] = Field(default=None, foreign_key="post.id")
     post: Optional[Post] = Relationship(back_populates="votes")
 
-    created_by_id: Optional[uuid.UUID] = Field(
-        default=None, foreign_key="user.id", unique=True
-    )
+    created_by_id: Optional[uuid.UUID] = Field(default=None, foreign_key="user.id")
     created_by: Optional[User] = Relationship(back_populates="votes")
 
 
