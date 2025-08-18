@@ -14,7 +14,7 @@ from app.models.crud import (
     create_post as crud_create_post,
     vote_post,
 )
-from app.models.models import Post, PostCreate, PostWithChildren
+from app.models.models import Post, PostCreate, PostWithChildren, Vote
 
 router = APIRouter(prefix="/posts")
 
@@ -64,7 +64,7 @@ def vote(*, session: SessionDep, user: CurrentUser, data: VoteData):
 
 
 @router.get("/votes")
-def get_votes(*, session: SessionDep, user: CurrentUser):
+def get_votes(*, session: SessionDep, user: CurrentUser) -> list[Vote]:
     return user.votes
 
 

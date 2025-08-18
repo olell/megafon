@@ -165,6 +165,28 @@ export type ValidationError = {
 };
 
 /**
+ * Vote
+ */
+export type Vote = {
+    /**
+     * Id
+     */
+    id?: string;
+    /**
+     * Value
+     */
+    value: number;
+    /**
+     * Post Id
+     */
+    post_id?: string | null;
+    /**
+     * Created By Id
+     */
+    created_by_id?: string | null;
+};
+
+/**
  * VoteData
  */
 export type VoteData = {
@@ -306,10 +328,13 @@ export type GetVotesApiV1PostsVotesGetData = {
 
 export type GetVotesApiV1PostsVotesGetResponses = {
     /**
+     * Response Get Votes Api V1 Posts Votes Get
      * Successful Response
      */
-    200: unknown;
+    200: Array<Vote>;
 };
+
+export type GetVotesApiV1PostsVotesGetResponse = GetVotesApiV1PostsVotesGetResponses[keyof GetVotesApiV1PostsVotesGetResponses];
 
 export type FlagApiV1PostsFlagPostData = {
     body: FlagData;
@@ -374,6 +399,20 @@ export type InitSessionApiV1UserPostResponses = {
 };
 
 export type InitSessionApiV1UserPostResponse = InitSessionApiV1UserPostResponses[keyof InitSessionApiV1UserPostResponses];
+
+export type IndexGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/';
+};
+
+export type IndexGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
 
 export type ClientOptions = {
     baseUrl: 'http://localhost:8000' | (string & {});
