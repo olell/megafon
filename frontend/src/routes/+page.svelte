@@ -17,6 +17,13 @@
 		});
 	};
 	$effect(refreshPosts);
+
+	$effect(() => {
+		const interval = setInterval(refreshPosts, 10000);
+		return () => {
+			clearInterval(interval);
+		};
+	});
 </script>
 
 <CreatePost {refreshPosts} bind:isOpen={createPostOpen} parent={null} />
