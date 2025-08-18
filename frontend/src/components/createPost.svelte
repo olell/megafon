@@ -49,8 +49,8 @@
 			return;
 		}
 
-		refreshPosts();
 		toggle();
+		refreshPosts();
 	};
 
 	let inner = $state<HTMLElement>();
