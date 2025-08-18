@@ -3,9 +3,15 @@
 	import { getPostsApiV1PostsGet, type Post } from '../client';
 	import CreatePost from '../components/createPost.svelte';
 	import PostComponent from '../components/post.svelte';
-	import { all_posts, refreshPosts } from '../sharedState.svelte';
+	import { all_posts, refreshPosts, refreshVotes } from '../sharedState.svelte';
 
 	let createPostOpen = $state(false);
+
+	$effect(() => {
+		if (all_posts.val.length) {
+			refreshVotes();
+		}
+	});
 
 	$effect(refreshPosts);
 	$effect(() => {

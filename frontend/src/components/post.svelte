@@ -1,22 +1,65 @@
 <script lang="ts">
-	import { Icon } from '@sveltestrap/sveltestrap';
-	import type { Post } from '../client';
+	import { Button, Icon } from '@sveltestrap/sveltestrap';
+	import { voteApiV1PostsVotePost, type Post } from '../client';
+	import { all_votes, refreshPosts, refreshVotes } from '../sharedState.svelte';
 
 	const { post }: { post: Post } = $props();
 
 	const created_at_date = $derived(new Date(post.created_at!).toLocaleDateString());
 	const created_at_time = $derived(new Date(post.created_at!).toLocaleTimeString());
+
+	const voted = $derived(all_votes.val.find((v) => v.post_id == post.id));
+
+	const setVote = async (v: 0 | 1 | -1) => {
+		console.log(post.id, v);
+		await voteApiV1PostsVotePost({
+			credentials: 'include',
+			body: {
+				post: post!.id!,
+				value: v
+			}
+		}).catch(console.log);
+		refreshVotes();
+		refreshPosts();
+	};
+
+	const voteUp = async (e: Event) => {
+		e.preventDefault();
+		if (voted?.value === 1) {
+			await setVote(0);
+			return;
+		}
+		await setVote(1);
+	};
+
+	const voteDown = async (e: Event) => {
+		e.preventDefault();
+		if (voted?.value === -1) {
+			await setVote(0);
+			return;
+		}
+		await setVote(-1);
+	};
 </script>
 
 <div class="card bg-success mb-2">
 	<div class="card-body">
-		<span class="d-flex w-100 justify-content-between">
+		<span class="d-flex w-100 justify-content-between mb-3">
 			<h4 class="card-title">{post.created_by_name}</h4>
 			<div class="fs-5">
-				<Icon name="heart-fill"></Icon>
-				{post.upvotes}
-				<Icon name="heartbreak-fill" class="ms-4 text-danger"></Icon>
-				{post.downvotes}
+				<Button onclick={voteUp} size="sm" color={voted?.value === 1 ? 'info' : 'success'}>
+					<Icon name="hand-thumbs-up-fill"></Icon>
+					{post.upvotes}
+				</Button>
+				<Button
+					onclick={voteDown}
+					size="sm"
+					color={voted?.value === -1 ? 'info' : 'success'}
+					class="ms-2"
+				>
+					<Icon name="hand-thumbs-down-fill"></Icon>
+					{post.downvotes}
+				</Button>
 			</div>
 		</span>
 		<h6 class="card-subtitle mb-2 text-muted">

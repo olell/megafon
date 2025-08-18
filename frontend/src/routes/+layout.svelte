@@ -8,7 +8,6 @@
 		Nav,
 		Navbar,
 		NavbarBrand,
-		NavItem,
 		Toast,
 		ToastBody,
 		ToastHeader
@@ -17,7 +16,7 @@
 	import Login from '../components/login.svelte';
 	import { messages, push_message } from '../messageService.svelte';
 	import { fade } from 'svelte/transition';
-	import { user_info } from '../sharedState.svelte';
+	import { postOrder, user_info } from '../sharedState.svelte';
 
 	import { dev } from '$app/environment';
 	import { client } from '../client/client.gen';
@@ -58,6 +57,17 @@
 			TARMAC - MEGAFON
 		</p>
 	</NavbarBrand>
+	<Nav navbar>
+		<Button
+			color="link"
+			size="md"
+			onclick={() => {
+				postOrder.val = postOrder.val === 'newest' ? 'votes' : 'newest';
+			}}
+		>
+			<Icon name={postOrder.val === 'newest' ? 'clock-fill' : 'star-fill'}></Icon>
+		</Button>
+	</Nav>
 </Navbar>
 
 <Login bind:isOpen={loginOpen} />
