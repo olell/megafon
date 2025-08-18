@@ -2,6 +2,7 @@ from fastapi import APIRouter, Response
 import jwt
 from pydantic import BaseModel
 
+from app.api.deps import CurrentUser
 from app.core.db import SessionDep
 from app.core.config import settings
 from app.models.crud import create_user
@@ -23,4 +24,9 @@ def init_session(*, session: SessionDep, data: SessionInit, response: Response) 
     )
 
     response.set_cookie(key="auth", value=token, expires=2147483647)
+    return user
+
+
+@router.get("/")
+def get_session(*, session: SessionDep, user: CurrentUser) -> User:
     return user
