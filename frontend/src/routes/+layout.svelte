@@ -8,10 +8,36 @@
 		Nav,
 		Navbar,
 		NavbarBrand,
-		NavItem
+		NavItem,
+		Toast,
+		ToastBody,
+		ToastHeader
 	} from '@sveltestrap/sveltestrap';
+	import { getSessionApiV1UserGet } from '../client';
+	import Login from '../components/login.svelte';
+	import { messages, push_message } from '../messageService.svelte';
+	import { fade } from 'svelte/transition';
+	import { user_info } from '../sharedState.svelte';
 
 	let { children } = $props();
+
+	let loginOpen = $state(false);
+
+	$effect(() => {
+		getSessionApiV1UserGet({ credentials: 'include' }).then(({ data, error }) => {
+			if (!!error) {
+				// create session
+				loginOpen = true;
+				return;
+			}
+			push_message({
+				color: 'success',
+				title: 'Hello!',
+				message: `Willkommen zurück, ${data!.name} 👋`
+			});
+			user_info.val = data!;
+		});
+	});
 </script>
 
 <svelte:head>
@@ -29,6 +55,19 @@
 		</NavItem>
 	</Nav>
 </Navbar>
+
+<Login bind:isOpen={loginOpen} />
+
+<div style="bottom: 0; right: 0; position: fixed; z-index: 9001;">
+	{#each messages as message (message.key)}
+		<div class="p-3 mb-1" transition:fade>
+			<Toast class="me-1">
+				<ToastHeader icon={message.color}>{message.title}</ToastHeader>
+				<ToastBody>{message.message}</ToastBody>
+			</Toast>
+		</div>
+	{/each}
+</div>
 
 <Container style="padding-top: 6rem">
 	{@render children?.()}
