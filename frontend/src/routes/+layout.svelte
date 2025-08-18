@@ -53,8 +53,10 @@
 
 <Navbar class="mb-3 fixed-top bg-primary navbar-blur" style="border: none;">
 	<NavbarBrand href={resolve('/')}>
-		<img src={favicon} alt="" height="30" class="d-inline-block ms-2 me-2" />
-		TARMAC - MEGAFON
+		<p class="fw-bold">
+			<img src={favicon} alt="" height="30" class="d-inline-block ms-2 me-2" />
+			TARMAC - MEGAFON
+		</p>
 	</NavbarBrand>
 </Navbar>
 
