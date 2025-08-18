@@ -2,6 +2,7 @@
 	import { Button, Icon } from '@sveltestrap/sveltestrap';
 	import { voteApiV1PostsVotePost, type Post } from '../client';
 	import { all_votes, refreshPosts, refreshVotes } from '../sharedState.svelte';
+	import { slide } from 'svelte/transition';
 
 	const { post }: { post: Post } = $props();
 
@@ -42,7 +43,7 @@
 	};
 </script>
 
-<div class="card bg-success mb-2">
+<div class="card bg-success mb-2" transition:slide>
 	<div class="card-body">
 		<span class="d-flex w-100 justify-content-between mb-3">
 			<h4 class="card-title">{post.created_by_name}</h4>
