@@ -19,6 +19,13 @@
 	import { fade } from 'svelte/transition';
 	import { user_info } from '../sharedState.svelte';
 
+	import { dev } from '$app/environment';
+	import { client } from '../client/client.gen';
+
+	if (!dev) {
+		client.setConfig({ ...client.getConfig(), baseUrl: '/' });
+	}
+
 	let { children } = $props();
 
 	let loginOpen = $state(false);
@@ -49,11 +56,6 @@
 		<img src={favicon} alt="" height="30" class="d-inline-block ms-2 me-2" />
 		TARMAC - MEGAFON
 	</NavbarBrand>
-	<Nav navbar>
-		<NavItem class="float-end">
-			<Button color="warning" class="fs-4"><Icon name="chat-square-text-fill"></Icon></Button>
-		</NavItem>
-	</Nav>
 </Navbar>
 
 <Login bind:isOpen={loginOpen} />
