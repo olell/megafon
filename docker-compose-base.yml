@@ -10,4 +10,4 @@ services:
       MARIADB_DATABASE: megafon
       MARIADB_PASSWORD: megafon
     ports:
-      - 127.0.0.1:3306:3306
+      - 127.0.0.1:3307:3306

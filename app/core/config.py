@@ -90,5 +90,11 @@ class Settings(BaseSettings):
     def logging_loglevel(self) -> int:
         return getLevelNamesMapping().get(self.LOGLEVEL, INFO)
 
+    # NOTIFICATIONS
+
+    NOTIFY_PRIVATE_KEY: str
+    NOTIFY_PUBLIC_KEY: str
+    NOTIFY_BASE64_PUBKEY: str
+
 
 settings = Settings()
