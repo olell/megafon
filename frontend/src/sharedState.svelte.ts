@@ -24,10 +24,12 @@ export const refreshPosts = () => {
 export const all_votes = $state<{ val: Vote[] }>({ val: [] });
 
 export const refreshVotes = () => {
-	getVotesApiV1PostsVotesGet({ credentials: 'include' }).then(({ data, error }) => {
-		if (error) {
-			push_api_error(error, 'Fehler beim laden der Votes!');
-		}
-		all_votes.val = data!;
-	});
+	if (user_info.val) {
+		getVotesApiV1PostsVotesGet({ credentials: 'include' }).then(({ data, error }) => {
+			if (error) {
+				push_api_error(error, 'Fehler beim laden der Votes!');
+			}
+			all_votes.val = data!;
+		});
+	}
 };

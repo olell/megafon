@@ -5,9 +5,11 @@ description = "MEGAFON local community platform"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "cryptography>=45.0.6",
     "fastapi[standard]>=0.116.1",
     "pydantic-settings>=2.10.1",
     "pyjwt>=2.10.1",
     "pymysql>=1.1.1",
+    "pywebpush>=2.0.3",
     "sqlmodel>=0.0.24",
 ]

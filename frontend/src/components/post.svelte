@@ -9,7 +9,7 @@
 	const created_at_date = $derived(new Date(post.created_at!).toLocaleDateString());
 	const created_at_time = $derived(new Date(post.created_at!).toLocaleTimeString());
 
-	const voted = $derived(all_votes.val.find((v) => v.post_id == post.id));
+	const voted = $derived(all_votes.val?.find((v) => v.post_id == post.id));
 
 	const setVote = async (v: 0 | 1 | -1) => {
 		console.log(post.id, v);

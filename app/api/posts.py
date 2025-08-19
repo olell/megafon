@@ -1,6 +1,6 @@
 from typing import Literal, Optional
 import uuid
-from fastapi import APIRouter
+from fastapi import APIRouter, BackgroundTasks
 from datetime import datetime
 
 from pydantic import BaseModel
@@ -12,6 +12,7 @@ from app.models.crud import (
     get_post_by_id,
     get_posts_by_timespan,
     create_post as crud_create_post,
+    schedule_notifications,
     vote_post,
 )
 from app.models.models import Post, PostCreate, PostWithChildren, Vote
@@ -51,8 +52,16 @@ def get_posts(
 
 
 @router.post("/")
-def create_post(*, session: SessionDep, user: CurrentUser, data: PostCreate):
-    return crud_create_post(session, user, data)
+def create_post(
+    *,
+    session: SessionDep,
+    user: CurrentUser,
+    data: PostCreate,
+    background_tasks: BackgroundTasks,
+):
+    post = crud_create_post(session, user, data)
+    schedule_notifications(session, post)
+    return post
 
 
 @router.post("/vote")

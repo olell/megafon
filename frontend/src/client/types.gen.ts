@@ -133,6 +133,22 @@ export type SessionInit = {
 };
 
 /**
+ * SubscribeData
+ */
+export type SubscribeData = {
+    /**
+     * Subscription
+     */
+    subscription: string;
+    mode: SubscriptionMode;
+};
+
+/**
+ * SubscriptionMode
+ */
+export type SubscriptionMode = 'none' | 'user' | 'all' | 'global';
+
+/**
  * User
  */
 export type User = {
@@ -144,6 +160,11 @@ export type User = {
      * Name
      */
     name: string;
+    /**
+     * Subscription
+     */
+    subscription?: string;
+    subscription_mode?: SubscriptionMode;
 };
 
 /**
@@ -399,6 +420,43 @@ export type InitSessionApiV1UserPostResponses = {
 };
 
 export type InitSessionApiV1UserPostResponse = InitSessionApiV1UserPostResponses[keyof InitSessionApiV1UserPostResponses];
+
+export type GetVapidPublicKeyApiV1NotifyVapidPublicKeyGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/notify/vapid_public_key';
+};
+
+export type GetVapidPublicKeyApiV1NotifyVapidPublicKeyGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
+
+export type SubscribeApiV1NotifySubscribePostData = {
+    body: SubscribeData;
+    path?: never;
+    query?: never;
+    url: '/api/v1/notify/subscribe';
+};
+
+export type SubscribeApiV1NotifySubscribePostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SubscribeApiV1NotifySubscribePostError = SubscribeApiV1NotifySubscribePostErrors[keyof SubscribeApiV1NotifySubscribePostErrors];
+
+export type SubscribeApiV1NotifySubscribePostResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
 
 export type IndexGetData = {
     body?: never;

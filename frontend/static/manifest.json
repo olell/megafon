@@ -1,0 +1,12 @@
+{
+	"theme_color": "#ffc700",
+	"background_color": "#a2e436",
+	"orientation": "portrait",
+	"display": "standalone",
+	"dir": "auto",
+	"lang": "de-DE",
+	"name": "MEGAFON",
+	"short_name": "MEGAFON",
+	"start_url": "a2e436",
+	"description": "Local community"
+}

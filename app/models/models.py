@@ -1,10 +1,18 @@
 import datetime
-from typing import Literal, Optional, Self
+from enum import Enum
+from typing import Dict, Literal, Optional, Self
 import uuid
 from pydantic import BaseModel, computed_field
-from sqlmodel import Field
+from sqlmodel import JSON, Column, Field
 from sqlmodel import Relationship, SQLModel
 from datetime import datetime
+
+
+class SubscriptionMode(Enum):
+    NONE = "none"
+    USER = "user"
+    ALL = "all"
+    GLOBAL = "global"
 
 
 class User(SQLModel, table=True):
@@ -14,6 +22,9 @@ class User(SQLModel, table=True):
     votes: list["Vote"] = Relationship(back_populates="created_by")
     posts: list["Post"] = Relationship(back_populates="created_by")
     created_flags: list["Flag"] = Relationship(back_populates="created_by")
+
+    subscription: str = Field(default="{}", max_length=1024)
+    subscription_mode: SubscriptionMode = SubscriptionMode.NONE
 
 
 class Post(SQLModel, table=True):

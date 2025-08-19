@@ -8,6 +8,7 @@
 		Nav,
 		Navbar,
 		NavbarBrand,
+		NavItem,
 		Toast,
 		ToastBody,
 		ToastHeader
@@ -17,7 +18,7 @@
 	import { messages, push_message } from '../messageService.svelte';
 	import { fade } from 'svelte/transition';
 	import { postOrder, user_info } from '../sharedState.svelte';
-
+	import { onMount } from 'svelte';
 	import { dev } from '$app/environment';
 	import { client } from '../client/client.gen';
 
@@ -36,11 +37,6 @@
 				loginOpen = true;
 				return;
 			}
-			push_message({
-				color: 'success',
-				title: 'Hello!',
-				message: `Willkommen zurück, ${data!.name} 👋`
-			});
 			user_info.val = data!;
 		});
 	});
@@ -48,6 +44,8 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
+	<link rel="manifest" href="/app/manifest.json" />
+	<title>MEGAFON</title>
 </svelte:head>
 
 <Navbar class="mb-3 fixed-top bg-primary navbar-blur" style="border: none;">
@@ -57,16 +55,18 @@
 			TARMAC - MEGAFON
 		</p>
 	</NavbarBrand>
-	<Nav navbar>
-		<Button
-			color="link"
-			size="md"
-			onclick={() => {
-				postOrder.val = postOrder.val === 'newest' ? 'votes' : 'newest';
-			}}
-		>
-			<Icon name={postOrder.val === 'newest' ? 'clock-fill' : 'star-fill'}></Icon>
-		</Button>
+	<Nav navbar class="d-inline">
+		<NavItem>
+			<Button
+				color="link"
+				size="md"
+				onclick={() => {
+					postOrder.val = postOrder.val === 'newest' ? 'votes' : 'newest';
+				}}
+			>
+				<Icon name={postOrder.val === 'newest' ? 'clock-fill' : 'star-fill'}></Icon>
+			</Button>
+		</NavItem>
 	</Nav>
 </Navbar>
 

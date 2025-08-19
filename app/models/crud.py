@@ -1,11 +1,14 @@
 from datetime import datetime, timedelta
+import json
 from typing import Literal
 import uuid
 from fastapi import HTTPException, status
+from pywebpush import webpush, WebPushException
 import sqlalchemy
 from sqlmodel import Session, select
 
-from app.models.models import Flag, Post, PostCreate, User, Vote
+from app.core.config import settings
+from app.models.models import Flag, Post, PostCreate, SubscriptionMode, User, Vote
 from sqlalchemy import func
 
 
@@ -16,6 +19,63 @@ def create_user(session: Session, username: str) -> User:
     session.refresh(user)
 
     return user
+
+
+def subscribe_user(
+    session: Session, user: User, subscription: str, mode: SubscriptionMode
+):
+    user.subscription = subscription
+    user.subscription_mode = mode
+    session.add(user)
+    session.commit()
+
+    print("Subscribed user", subscription, mode)
+
+
+def schedule_notifications(session: Session, post: Post):
+    all_users = session.exec(select(User)).all()
+
+    at_all = "@all" in post.content.lower()
+
+    print(f"Scheduled notifications for {post.content.lower()}")
+
+    for user in all_users:
+        if user.subscription_mode == SubscriptionMode.NONE:
+            continue
+
+        at_user = user.name.lower() in post.content.lower()
+
+        do_notify = False
+        if user.subscription_mode == SubscriptionMode.GLOBAL:
+            do_notify = True
+        elif user.subscription_mode == SubscriptionMode.ALL:
+            do_notify = at_user or at_all
+        elif user.subscription_mode == SubscriptionMode.USER:
+            do_notify = at_user
+
+        print(f"Notify {user.name}: {do_notify} ({at_user}, {at_all})")
+        if not do_notify:
+            continue
+
+        push_notification(
+            user,
+            f"{post.created_by_name}: {post.content}",
+        )
+
+
+def push_notification(user: User, message: str):
+    if user.subscription == "{}" or user.subscription_mode == SubscriptionMode.NONE:
+        return
+
+    try:
+        webpush(
+            subscription_info=json.loads(user.subscription),
+            data=message,
+            vapid_private_key=settings.NOTIFY_PRIVATE_KEY,
+            vapid_claims={"sub": "mailto:megafon@example.com"},
+        )
+    except WebPushException as ex:
+        print("Push failed:", repr(ex))
 
 
 def get_user_by_id(session: Session, user_id: str) -> User:
