@@ -60,7 +60,7 @@ def create_post(
     background_tasks: BackgroundTasks,
 ):
     post = crud_create_post(session, user, data)
-    schedule_notifications(session, post)
+    background_tasks.add_task(schedule_notifications, session=session, post=post)
     return post
 
 
