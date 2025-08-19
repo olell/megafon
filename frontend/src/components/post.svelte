@@ -3,8 +3,11 @@
 	import { voteApiV1PostsVotePost, type Post } from '../client';
 	import { all_votes, refreshPosts, refreshVotes } from '../sharedState.svelte';
 	import { slide } from 'svelte/transition';
+	import Flag from './flag.svelte';
 
 	const { post }: { post: Post } = $props();
+
+	let flagOpen = $state(false);
 
 	const created_at_date = $derived(new Date(post.created_at!).toLocaleDateString());
 	const created_at_time = $derived(new Date(post.created_at!).toLocaleTimeString());
@@ -74,8 +77,20 @@
 		<p class="card-text post-content">
 			{post.content}
 		</p>
+		<a
+			href={null}
+			onclick={() => {
+				flagOpen = true;
+			}}
+		>
+			<Icon name="flag-fill" style="color: #60a060"></Icon>
+		</a>
 	</div>
 </div>
+
+{#if flagOpen}
+	<Flag bind:isOpen={flagOpen} post_id={post.id} />
+{/if}
 
 <style>
 	.post-content {
