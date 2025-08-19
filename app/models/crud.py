@@ -115,7 +115,9 @@ def get_posts_by_timespan(
         query = (
             query.outerjoin(Vote, Vote.post_id == Post.id)
             .group_by(Post.id)
-            .order_by(func.coalesce(func.sum(Vote.value), 0).desc())
+            .order_by(
+                func.coalesce(func.sum(Vote.value), 0).desc(), Post.created_at.desc()
+            )
         )
     elif order == "newest":
         query = query.order_by(Post.created_at.desc())
