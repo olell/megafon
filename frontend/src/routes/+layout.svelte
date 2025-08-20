@@ -71,7 +71,7 @@
 
 <Login bind:isOpen={loginOpen} />
 
-<div style="bottom: 0; right: 0; position: fixed; z-index: 9001;">
+<div style="bottom: 0; left: 0; position: fixed; z-index: 9001;">
 	{#each messages as message (message.key)}
 		<div class="p-3 mb-1" transition:fade>
 			<Toast class="me-1">
