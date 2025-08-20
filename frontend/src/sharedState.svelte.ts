@@ -10,7 +10,7 @@ import { push_api_error } from './messageService.svelte';
 export const user_info = $state<{ val: User | null }>({ val: null });
 export const all_posts = $state<{ val: Post[] }>({ val: [] });
 
-export const postOrder = $state<{ val: 'newest' | 'votes' }>({ val: 'newest' });
+export const postOrder = $state<{ val: 'newest' | 'votes' }>({ val: 'votes' });
 
 export const refreshPosts = () => {
 	getPostsApiV1PostsGet({ query: { order: postOrder.val } }).then(({ data, error }) => {
