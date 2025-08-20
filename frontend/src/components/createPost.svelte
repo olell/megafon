@@ -17,8 +17,10 @@
 	} from '../client';
 	import { refreshPosts } from '../sharedState.svelte';
 
-	let { isOpen = $bindable(), parent }: { isOpen: boolean; parent: Post | PostWithChildren } =
-		$props();
+	let {
+		isOpen = $bindable(),
+		parent
+	}: { isOpen: boolean; parent: Post | PostWithChildren | undefined } = $props();
 	let value = $state('');
 	const toggle = () => {
 		isOpen = !isOpen;
@@ -52,7 +54,7 @@
 		const { data, error } = await createPostApiV1PostsPost({
 			credentials: 'include',
 			body: {
-				parent: parent.id,
+				parent: parent?.id,
 				content: value
 			}
 		});
