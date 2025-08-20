@@ -2,7 +2,7 @@
 	import { Button, Icon } from '@sveltestrap/sveltestrap';
 	import { voteApiV1PostsVotePost, type Post, type PostWithChildren } from '../client';
 	import { all_votes, refreshPosts, refreshVotes } from '../sharedState.svelte';
-	import { slide } from 'svelte/transition';
+	import { scale } from 'svelte/transition';
 	import Flag from './flag.svelte';
 	import { resolve } from '$app/paths';
 	import { goto } from '$app/navigation';
@@ -53,7 +53,7 @@
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="card bg-{color} mb-2" transition:slide>
+<div class="card bg-{color} mb-2" transition:scale>
 	<div class="card-body">
 		<span class="d-flex w-100 justify-content-between mb-3">
 			<h4 class="card-title">{post.created_by_name}</h4>

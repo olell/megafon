@@ -47,7 +47,7 @@
 	});
 </script>
 
-<CreatePost bind:isOpen={createPostOpen} parent={parent?.id} />
+<CreatePost bind:isOpen={createPostOpen} {parent} />
 
 {#if parent}
 	<div class="mb-3 fs-5">

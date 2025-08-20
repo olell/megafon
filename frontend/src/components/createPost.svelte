@@ -9,16 +9,29 @@
 		ModalBody
 	} from '@sveltestrap/sveltestrap';
 	import { push_api_error, push_message } from '../messageService.svelte';
-	import { createPostApiV1PostsPost, initSessionApiV1UserPost } from '../client';
+	import {
+		createPostApiV1PostsPost,
+		initSessionApiV1UserPost,
+		type Post,
+		type PostWithChildren
+	} from '../client';
 	import { refreshPosts } from '../sharedState.svelte';
 
-	let { isOpen = $bindable(), parent } = $props();
-
+	let { isOpen = $bindable(), parent }: { isOpen: boolean; parent: Post | PostWithChildren } =
+		$props();
 	let value = $state('');
 	const toggle = () => {
 		isOpen = !isOpen;
 		value = '';
 	};
+
+	$effect(() => {
+		if (isOpen && parent) {
+			value = `@${parent.created_by_name} `;
+		} else {
+			value = '';
+		}
+	});
 
 	const handlePost = async (e: SubmitEvent) => {
 		e.preventDefault();
@@ -39,7 +52,7 @@
 		const { data, error } = await createPostApiV1PostsPost({
 			credentials: 'include',
 			body: {
-				parent,
+				parent: parent.id,
 				content: value
 			}
 		});
