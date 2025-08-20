@@ -1,5 +1,5 @@
 services:
-  mariadb:
+  mariadb-megafon:
     image: mariadb
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]

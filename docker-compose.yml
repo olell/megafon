@@ -1,0 +1,16 @@
+include:
+  - docker-compose-base.yml
+
+services:
+  app:
+    build: .
+    image: olel/megafon:latest
+    depends_on:
+      mariadb-megafon:
+        condition: service_healthy
+    env_file: ".env"
+    environment:
+      MEGAFON_DATABASE_PORT: 3306
+      MEGAFON_DATABASE_SERVER: mariadb-megafon
+    ports:
+      - 8000:8000
