@@ -61,7 +61,14 @@
 	};
 </script>
 
-<Modal autoFocus centered backdrop="static" header="Neuer Post" {isOpen} {toggle}>
+<Modal
+	autoFocus
+	centered
+	backdrop="static"
+	header="Neuer {parent ? 'Kommentar' : 'Post'}"
+	{isOpen}
+	{toggle}
+>
 	<ModalBody>
 		<Form onsubmit={handlePost}>
 			<FormGroup floating label="Was möchtest du sagen?">

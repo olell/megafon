@@ -15,10 +15,9 @@
 	} from '@sveltestrap/sveltestrap';
 	import { getSessionApiV1UserGet } from '../client';
 	import Login from '../components/login.svelte';
-	import { messages, push_message } from '../messageService.svelte';
+	import { messages } from '../messageService.svelte';
 	import { fade } from 'svelte/transition';
 	import { postOrder, user_info } from '../sharedState.svelte';
-	import { onMount } from 'svelte';
 	import { dev } from '$app/environment';
 	import { client } from '../client/client.gen';
 

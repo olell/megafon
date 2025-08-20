@@ -1,11 +1,16 @@
 <script lang="ts">
 	import { Button, Icon } from '@sveltestrap/sveltestrap';
-	import { voteApiV1PostsVotePost, type Post } from '../client';
+	import { voteApiV1PostsVotePost, type Post, type PostWithChildren } from '../client';
 	import { all_votes, refreshPosts, refreshVotes } from '../sharedState.svelte';
 	import { slide } from 'svelte/transition';
 	import Flag from './flag.svelte';
+	import { resolve } from '$app/paths';
+	import { goto } from '$app/navigation';
 
-	const { post }: { post: Post } = $props();
+	const { post, isParent = false }: { post: Post | PostWithChildren; isParent: boolean } = $props();
+
+	const color = $derived(isParent ? 'info' : 'success');
+	const altColor = $derived(isParent ? 'success' : 'info');
 
 	let flagOpen = $state(false);
 
@@ -46,19 +51,21 @@
 	};
 </script>
 
-<div class="card bg-success mb-2" transition:slide>
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div class="card bg-{color} mb-2" transition:slide>
 	<div class="card-body">
 		<span class="d-flex w-100 justify-content-between mb-3">
 			<h4 class="card-title">{post.created_by_name}</h4>
 			<div class="fs-5">
-				<Button onclick={voteUp} size="sm" color={voted?.value === 1 ? 'info' : 'success'}>
+				<Button onclick={voteUp} size="sm" color={voted?.value === 1 ? altColor : color}>
 					<Icon name="hand-thumbs-up-fill"></Icon>
 					{post.upvotes}
 				</Button>
 				<Button
 					onclick={voteDown}
 					size="sm"
-					color={voted?.value === -1 ? 'info' : 'success'}
+					color={voted?.value === -1 ? altColor : color}
 					class="ms-2"
 				>
 					<Icon name="hand-thumbs-down-fill"></Icon>
@@ -83,8 +90,11 @@
 				flagOpen = true;
 			}}
 		>
-			<Icon name="flag-fill" style="color: #60a060"></Icon>
+			<Icon name="flag-fill"></Icon>
 		</a>
+		{#if !isParent}
+			<a href="/app/post/{post.id}" class="float-end"> Kommentare </a>
+		{/if}
 	</div>
 </div>
 
