@@ -96,5 +96,11 @@ class Settings(BaseSettings):
     NOTIFY_PUBLIC_KEY: str
     NOTIFY_BASE64_PUBKEY: str
 
+    # SRPRINT
+
+    USE_SRPRINT: bool = False
+    SRPRINT_BASE_URL: str | None = None
+    SRPRINT_MENTION: str = "@all"
+
 
 settings = Settings()

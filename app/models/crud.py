@@ -11,6 +11,8 @@ from app.core.config import settings
 from app.models.models import Flag, Post, PostCreate, SubscriptionMode, User, Vote
 from sqlalchemy import func
 
+from app.util.srprint import print_post
+
 
 def create_user(session: Session, username: str) -> User:
     user = User(name=username)
@@ -145,6 +147,14 @@ def create_post(session: Session, user: User, data: PostCreate) -> Post:
         raise HTTPException(
             status_code=status.HTTP_406_NOT_ACCEPTABLE, detail="Failed to post!"
         )
+
+    try:
+        if settings.USE_SRPRINT and settings.SRPRINT_MENTION in post.content:
+            print("Printing post", post)
+            print_post(post)
+    except Exception as e:
+        print(e)
+        pass
 
     return post
 
