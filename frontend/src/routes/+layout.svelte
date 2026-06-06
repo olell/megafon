@@ -3,8 +3,18 @@
 	import { resolve } from '$app/paths';
 	import favicon from '$lib/assets/favicon.svg';
 	import { initTheme, theme, toggleTheme } from '$lib/theme.svelte';
-	import { Navbar, NavBrand, Toast } from 'flowbite-svelte';
-	import { BullhornSolid, ClockSolid, FireSolid, MoonSolid, SunSolid } from 'flowbite-svelte-icons';
+	import { install, initInstall, promptInstall } from '$lib/pwaInstall.svelte';
+	import { Modal, Navbar, NavBrand, Toast } from 'flowbite-svelte';
+	import {
+		ArrowUpFromBracketOutline,
+		BullhornSolid,
+		ClockSolid,
+		DownloadOutline,
+		FireSolid,
+		MoonSolid,
+		PlusOutline,
+		SunSolid
+	} from 'flowbite-svelte-icons';
 	import { fade, fly } from 'svelte/transition';
 	import '../app.css';
 	import { getSessionApiV1UserGet } from '../client';
@@ -20,8 +30,18 @@
 	let { children } = $props();
 
 	let loginOpen = $state(false);
+	let iosHintOpen = $state(false);
 
 	initTheme();
+	initInstall();
+
+	const onInstallClick = () => {
+		if (install.canPrompt) {
+			promptInstall();
+		} else {
+			iosHintOpen = true;
+		}
+	};
 
 	// Register the service worker so the app is installable and works offline —
 	// independent of whether the user opts into notifications. Skipped in dev to
@@ -69,6 +89,17 @@
 	</NavBrand>
 
 	<div class="flex items-center gap-1">
+		{#if !install.installed && (install.canPrompt || install.iosHint)}
+			<button
+				type="button"
+				aria-label="App installieren"
+				class="me-1 flex items-center gap-1 rounded-full bg-secondary-400 px-3 py-1.5 text-sm font-bold text-primary-900 transition-transform hover:scale-105 active:scale-95"
+				onclick={onInstallClick}
+			>
+				<DownloadOutline class="h-5 w-5" /> Installieren
+			</button>
+		{/if}
+
 		<button
 			type="button"
 			aria-label="Sortierung umschalten"
@@ -104,6 +135,32 @@
 </Navbar>
 
 <Login bind:open={loginOpen} />
+
+<Modal title="App installieren" bind:open={iosHintOpen} size="sm" class="w-[calc(100%-2rem)]">
+	<div class="space-y-4 text-base text-gray-700 dark:text-gray-200">
+		<p>So legst du MEGAFON auf deinem iPhone als App ab:</p>
+		<ol class="ml-1 space-y-3">
+			<li class="flex items-center gap-2">
+				<span class="font-bold text-primary-700 dark:text-primary-300">1.</span>
+				Tippe unten in Safari auf
+				<span class="inline-flex items-center gap-1 font-semibold">
+					Teilen <ArrowUpFromBracketOutline class="h-5 w-5" />
+				</span>
+			</li>
+			<li class="flex items-center gap-2">
+				<span class="font-bold text-primary-700 dark:text-primary-300">2.</span>
+				Wähle
+				<span class="inline-flex items-center gap-1 font-semibold">
+					„Zum Home-Bildschirm" <PlusOutline class="h-5 w-5" />
+				</span>
+			</li>
+			<li class="flex items-center gap-2">
+				<span class="font-bold text-primary-700 dark:text-primary-300">3.</span>
+				Bestätige mit <span class="font-semibold">„Hinzufügen"</span>.
+			</li>
+		</ol>
+	</div>
+</Modal>
 
 <div class="fixed bottom-0 left-0 z-[9001] flex flex-col gap-2 p-3">
 	{#each messages as message (message.key)}
