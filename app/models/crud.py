@@ -1,5 +1,7 @@
 from datetime import datetime, timedelta
 import json
+from logging import getLogger
+import re
 from typing import Literal
 import uuid
 from fastapi import HTTPException, status
@@ -8,8 +10,11 @@ import sqlalchemy
 from sqlmodel import Session, select
 
 from app.core.config import settings
+from app.core.db import engine
 from app.models.models import Flag, Post, PostCreate, SubscriptionMode, User, Vote
 from sqlalchemy import func
+
+logger = getLogger(__name__)
 
 
 def create_user(session: Session, username: str) -> User:
@@ -29,38 +34,53 @@ def subscribe_user(
     session.add(user)
     session.commit()
 
-    print("Subscribed user", subscription, mode)
+    logger.info("Subscribed user %s (%s)", user.name, mode)
 
 
-def schedule_notifications(session: Session, post: Post):
-    all_users = session.exec(select(User)).all()
+def schedule_notifications(post_id: uuid.UUID):
+    # Runs as a background task after the request's session is already closed,
+    # so open a fresh session and re-load the post here.
+    with Session(engine) as session:
+        post = session.get(Post, post_id)
+        if post is None:
+            return
 
-    at_all = "@all" in post.content.lower()
+        all_users = session.exec(select(User)).all()
 
-    print(f"Scheduled notifications for {post.content.lower()}")
+        content = post.content.lower()
+        at_all = "@all" in content
 
-    for user in all_users:
-        if user.subscription_mode == SubscriptionMode.NONE:
-            continue
+        logger.info("Scheduled notifications for %s", content)
 
-        at_user = user.name.lower() in post.content.lower()
+        for user in all_users:
+            if user.subscription_mode == SubscriptionMode.NONE:
+                continue
 
-        do_notify = False
-        if user.subscription_mode == SubscriptionMode.GLOBAL:
-            do_notify = True
-        elif user.subscription_mode == SubscriptionMode.ALL:
-            do_notify = at_user or at_all
-        elif user.subscription_mode == SubscriptionMode.USER:
-            do_notify = at_user
+            # Word-boundary match so "tom" doesn't match "tomato" and short
+            # names don't match every post.
+            at_user = (
+                re.search(rf"(?<!\w){re.escape(user.name.lower())}(?!\w)", content)
+                is not None
+            )
 
-        print(f"Notify {user.name}: {do_notify} ({at_user}, {at_all})")
-        if not do_notify:
-            continue
+            do_notify = False
+            if user.subscription_mode == SubscriptionMode.GLOBAL:
+                do_notify = True
+            elif user.subscription_mode == SubscriptionMode.ALL:
+                do_notify = at_user or at_all
+            elif user.subscription_mode == SubscriptionMode.USER:
+                do_notify = at_user
 
-        push_notification(
-            user,
-            f"{post.created_by_name}: {post.content}",
-        )
+            logger.debug(
+                "Notify %s: %s (%s, %s)", user.name, do_notify, at_user, at_all
+            )
+            if not do_notify:
+                continue
+
+            push_notification(
+                user,
+                f"{post.created_by_name}: {post.content}",
+            )
 
 
 def push_notification(user: User, message: str):
@@ -75,7 +95,7 @@ def push_notification(user: User, message: str):
             vapid_claims={"sub": "mailto:megafon@example.com"},
         )
     except WebPushException as ex:
-        print("Push failed:", repr(ex))
+        logger.warning("Push failed: %r", ex)
 
 
 def get_user_by_id(session: Session, user_id: str) -> User:
@@ -195,7 +215,7 @@ def flag_post(session: Session, user: User, post: uuid.UUID, notice: str):
         session.commit()
         session.refresh(flag)
         return flag
-    except:
+    except sqlalchemy.exc.IntegrityError:
         raise HTTPException(
             status_code=status.HTTP_406_NOT_ACCEPTABLE, detail="Failed to report!"
         )

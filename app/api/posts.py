@@ -39,10 +39,11 @@ def get_post(*, session: SessionDep, post_id: uuid.UUID, user: CurrentUser):
 def get_posts(
     *,
     session: SessionDep,
+    user: CurrentUser,
     since: Optional[datetime] = None,
     max_hours: int = 24,
     limit: int = 1000,
-    order: Literal["votes", "newest"],
+    order: Literal["votes", "newest"] = "newest",
 ) -> list[Post]:
     if since is None:
         since = datetime.now()
@@ -60,7 +61,7 @@ def create_post(
     background_tasks: BackgroundTasks,
 ):
     post = crud_create_post(session, user, data)
-    background_tasks.add_task(schedule_notifications, session=session, post=post)
+    background_tasks.add_task(schedule_notifications, post_id=post.id)
     return post
 
 
