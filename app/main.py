@@ -50,6 +50,7 @@ if settings.all_cors_origins:
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
 build_path = Path("frontend/build")
+build_path.mkdir(parents=True, exist_ok=True)
 app.mount("/app", StaticFiles(directory=build_path), name="static")
 
 
