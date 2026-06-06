@@ -5,6 +5,7 @@ import re
 from typing import Literal
 import uuid
 from fastapi import HTTPException, status
+from py_vapid import Vapid
 from pywebpush import webpush, WebPushException
 import sqlalchemy
 from sqlmodel import Session, select
@@ -15,6 +16,10 @@ from app.models.models import Flag, Post, PostCreate, SubscriptionMode, User, Vo
 from sqlalchemy import func
 
 logger = getLogger(__name__)
+
+# pywebpush only accepts a PEM via a Vapid object (a PEM *string* is run through
+# Vapid.from_string, which base64-decodes it and fails). Build it once here.
+vapid = Vapid.from_pem(settings.NOTIFY_PRIVATE_KEY.encode())
 
 
 def create_user(session: Session, username: str) -> User:
@@ -91,7 +96,7 @@ def push_notification(user: User, message: str):
         webpush(
             subscription_info=json.loads(user.subscription),
             data=message,
-            vapid_private_key=settings.NOTIFY_PRIVATE_KEY,
+            vapid_private_key=vapid,
             vapid_claims={"sub": "mailto:megafon@example.com"},
         )
     except WebPushException as ex:
