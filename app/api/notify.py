@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Request
-from pydantic import BaseModel
-from pywebpush import webpush, WebPushException
+import json
+
+from fastapi import APIRouter
+from pydantic import BaseModel, field_validator
 
 from app.api.deps import CurrentUser
 from app.core.config import settings
@@ -10,13 +11,19 @@ from app.models.models import SubscriptionMode
 
 router = APIRouter(prefix="/notify")
 
-subscriptions = []
-VAPID_CLAIMS = {"sub": "mailto:you@example.com"}
-
 
 class SubscribeData(BaseModel):
     subscription: str
     mode: SubscriptionMode
+
+    @field_validator("subscription")
+    @classmethod
+    def subscription_must_be_json(cls, v: str) -> str:
+        try:
+            json.loads(v)
+        except (json.JSONDecodeError, TypeError):
+            raise ValueError("subscription must be a valid JSON string")
+        return v
 
 
 @router.get("/vapid_public_key")
