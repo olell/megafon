@@ -10,12 +10,13 @@ import { push_api_error } from './messageService.svelte';
 export const user_info = $state<{ val: User | null }>({ val: null });
 export const all_posts = $state<{ val: Post[] }>({ val: [] });
 
-export const postOrder = $state<{ val: 'newest' | 'votes' }>({ val: 'votes' });
+export const postOrder = $state<{ val: 'newest' | 'votes' }>({ val: 'newest' });
 
 export const refreshPosts = () => {
 	getPostsApiV1PostsGet({ query: { order: postOrder.val } }).then(({ data, error }) => {
 		if (error) {
 			push_api_error(error, 'Fehler beim laden der Posts!');
+			return;
 		}
 		all_posts.val = data!;
 	});
@@ -28,6 +29,7 @@ export const refreshVotes = () => {
 		getVotesApiV1PostsVotesGet({ credentials: 'include' }).then(({ data, error }) => {
 			if (error) {
 				push_api_error(error, 'Fehler beim laden der Votes!');
+				return;
 			}
 			all_votes.val = data!;
 		});

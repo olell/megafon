@@ -9,7 +9,8 @@
 
 	let value = $state('');
 
-	const handleFlag = async () => {
+	const handleFlag = async (e: SubmitEvent) => {
+		e.preventDefault();
 		const { error } = await flagApiV1PostsFlagPost({
 			credentials: 'include',
 			body: {

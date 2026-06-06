@@ -45,14 +45,15 @@
 				credentials: 'include'
 			});
 
-			if (error) {
+			if (error || !data) {
 				push_api_error(error, 'Schlüsselabfrage fehlgeschlagen!');
 				return;
 			}
 
+			const { publicKey } = data as { publicKey: string };
 			const sub = await reg.pushManager.subscribe({
 				userVisibleOnly: true,
-				applicationServerKey: urlBase64ToUint8Array(data.publicKey)
+				applicationServerKey: urlBase64ToUint8Array(publicKey)
 			});
 
 			const result = await subscribeApiV1NotifySubscribePost({
@@ -63,7 +64,7 @@
 				}
 			});
 			if (result.error) {
-				push_api_error(error, 'Fehler beim Subscribe!');
+				push_api_error(result.error, 'Fehler beim Subscribe!');
 			}
 		} else {
 			push_message({
@@ -97,7 +98,7 @@
 			}
 		});
 
-		if (!!error) {
+		if (!!error || !data) {
 			push_api_error(error, 'Fehler beim Anmelden! Bitte probiere die Seite neu zu laden :)');
 			return;
 		}

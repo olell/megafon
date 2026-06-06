@@ -9,12 +9,7 @@
 		ModalBody
 	} from '@sveltestrap/sveltestrap';
 	import { push_api_error, push_message } from '../messageService.svelte';
-	import {
-		createPostApiV1PostsPost,
-		initSessionApiV1UserPost,
-		type Post,
-		type PostWithChildren
-	} from '../client';
+	import { createPostApiV1PostsPost, type Post, type PostWithChildren } from '../client';
 	import { refreshPosts } from '../sharedState.svelte';
 
 	let {

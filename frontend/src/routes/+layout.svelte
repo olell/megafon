@@ -1,4 +1,6 @@
 <script lang="ts">
+	import 'bootswatch/dist/brite/bootstrap.min.css';
+	import 'bootstrap-icons/font/bootstrap-icons.css';
 	import { resolve } from '$app/paths';
 	import favicon from '$lib/assets/favicon.svg';
 	import {

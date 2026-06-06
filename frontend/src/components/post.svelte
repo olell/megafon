@@ -4,8 +4,7 @@
 	import { all_votes, refreshPosts, refreshVotes } from '../sharedState.svelte';
 	import { scale } from 'svelte/transition';
 	import Flag from './flag.svelte';
-	import { resolve } from '$app/paths';
-	import { goto } from '$app/navigation';
+	import { base } from '$app/paths';
 
 	const { post, isParent = false }: { post: Post | PostWithChildren; isParent: boolean } = $props();
 
@@ -20,14 +19,13 @@
 	const voted = $derived(all_votes.val?.find((v) => v.post_id == post.id));
 
 	const setVote = async (v: 0 | 1 | -1) => {
-		console.log(post.id, v);
 		await voteApiV1PostsVotePost({
 			credentials: 'include',
 			body: {
 				post: post!.id!,
 				value: v
 			}
-		}).catch(console.log);
+		}).catch(() => {});
 		refreshVotes();
 		refreshPosts();
 	};
@@ -51,8 +49,6 @@
 	};
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="card bg-{color} mb-2" transition:scale>
 	<div class="card-body">
 		<span class="d-flex w-100 justify-content-between mb-3">
@@ -84,16 +80,17 @@
 		<p class="card-text post-content">
 			{post.content}
 		</p>
-		<a
-			href={null}
+		<button
+			type="button"
+			class="btn btn-link p-0 align-baseline"
 			onclick={() => {
 				flagOpen = true;
 			}}
 		>
 			<Icon name="flag-fill"></Icon>
-		</a>
+		</button>
 		{#if !isParent}
-			<a href="/app/post/{post.id}" class="float-end"> Kommentare </a>
+			<a href="{base}/post/{post.id}" class="float-end"> Kommentare </a>
 		{/if}
 	</div>
 </div>

@@ -17,7 +17,9 @@ export const push_message = (msg: Message) => {
 	messages.push(_msg);
 	setTimeout(() => {
 		const idx = messages.findIndex((e) => e.key === _msg.key);
-		messages.splice(idx, 1);
+		if (idx !== -1) {
+			messages.splice(idx, 1);
+		}
 	}, 5000);
 };
 

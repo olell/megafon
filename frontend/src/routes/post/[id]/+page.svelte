@@ -11,6 +11,7 @@
 	import { all_posts, refreshPosts, refreshVotes } from '../../../sharedState.svelte';
 	import { page } from '$app/state';
 	import { push_api_error } from '../../../messageService.svelte';
+	import { base } from '$app/paths';
 
 	let createPostOpen = $state(false);
 
@@ -32,17 +33,15 @@
 				clearInterval(interval);
 			};
 		} else {
-			if (all_posts.val.length) {
-				getPostApiV1PostsInfoPostIdGet({ credentials: 'include', path: { post_id: id! } }).then(
-					({ data, error }) => {
-						if (error) {
-							push_api_error(error, 'Fehler beim laden des Posts!');
-							return;
-						}
-						parent = data!;
+			getPostApiV1PostsInfoPostIdGet({ credentials: 'include', path: { post_id: id! } }).then(
+				({ data, error }) => {
+					if (error) {
+						push_api_error(error, 'Fehler beim laden des Posts!');
+						return;
 					}
-				);
-			}
+					parent = data!;
+				}
+			);
 		}
 	});
 </script>
@@ -52,11 +51,11 @@
 {#if parent}
 	<div class="mb-3 fs-5">
 		{#if parent.parent_id}
-			<a href="/app/post/{parent.parent_id}" class="text-decoration-none"
+			<a href="{base}/post/{parent.parent_id}" class="text-decoration-none"
 				><Icon name="arrow-left-circle-fill"></Icon> Zurück</a
 			>
 		{:else}
-			<a href="/" class="text-decoration-none"
+			<a href="{base}/" class="text-decoration-none"
 				><Icon name="arrow-left-circle-fill"></Icon> Zur Startseite</a
 			>
 		{/if}
