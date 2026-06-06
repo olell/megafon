@@ -1,29 +1,18 @@
 <script lang="ts">
-	import {
-		Button,
-		Form,
-		FormGroup,
-		FormText,
-		Input,
-		Modal,
-		ModalBody
-	} from '@sveltestrap/sveltestrap';
+	import { Button, Helper, Modal, Textarea } from 'flowbite-svelte';
+	import { BullhornSolid } from 'flowbite-svelte-icons';
 	import { push_api_error, push_message } from '../messageService.svelte';
 	import { createPostApiV1PostsPost, type Post, type PostWithChildren } from '../client';
 	import { refreshPosts } from '../sharedState.svelte';
 
 	let {
-		isOpen = $bindable(),
+		open = $bindable(),
 		parent
-	}: { isOpen: boolean; parent: Post | PostWithChildren | undefined } = $props();
+	}: { open: boolean; parent: Post | PostWithChildren | undefined } = $props();
 	let value = $state('');
-	const toggle = () => {
-		isOpen = !isOpen;
-		value = '';
-	};
 
 	$effect(() => {
-		if (isOpen && parent) {
+		if (open && parent) {
 			value = `@${parent.created_by_name} `;
 		} else {
 			value = '';
@@ -46,7 +35,7 @@
 			return;
 		}
 
-		const { data, error } = await createPostApiV1PostsPost({
+		const { error } = await createPostApiV1PostsPost({
 			credentials: 'include',
 			body: {
 				parent: parent?.id,
@@ -54,40 +43,36 @@
 			}
 		});
 
-		if (!!error) {
+		if (error) {
 			push_api_error(error, 'Fehler beim erstellen des Posts!');
 			return;
 		}
 
-		toggle();
+		open = false;
+		value = '';
 		refreshPosts();
-	};
-
-	let inner = $state<HTMLElement>();
-
-	const resize = () => {
-		inner!.style.height = 'auto';
-		inner!.style.height = 4 + inner!.scrollHeight + 'px';
 	};
 </script>
 
 <Modal
-	autoFocus
-	centered
-	backdrop="static"
-	header="Neuer {parent ? 'Kommentar' : 'Post'}"
-	{isOpen}
-	{toggle}
+	title="Neuer {parent ? 'Kommentar' : 'Post'}"
+	bind:open
+	outsideclose={false}
+	size="sm"
+	class="w-[calc(100%-2rem)]"
 >
-	<ModalBody>
-		<Form onsubmit={handlePost}>
-			<FormGroup floating label="Was möchtest du sagen?">
-				<Input maxlength={500} bind:inner on:input={resize} type="textarea" bind:value required />
-				<FormText>
-					{value.length} / 500
-				</FormText>
-			</FormGroup>
-			<Button class="btn-warning float-end">Posten!</Button>
-		</Form>
-	</ModalBody>
+	<form onsubmit={handlePost} class="flex flex-col gap-3">
+		<Textarea
+			rows={4}
+			maxlength={500}
+			placeholder="Was möchtest du sagen?"
+			bind:value
+			required
+			class="w-full resize-none"
+		/>
+		<Helper class="text-right">{value.length} / 500</Helper>
+		<Button type="submit" color="primary" class="self-end gap-2 font-bold">
+			<BullhornSolid class="h-4 w-4" /> Posten!
+		</Button>
+	</form>
 </Modal>

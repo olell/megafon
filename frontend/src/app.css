@@ -1,0 +1,83 @@
+@import 'tailwindcss';
+@plugin 'flowbite/plugin';
+
+/* Tell Tailwind to scan Flowbite-Svelte so its utility classes survive purging. */
+@source '../node_modules/flowbite-svelte/dist';
+
+/* Dark mode is driven by a `.dark` class on <html> (toggled by the navbar). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * ============================================================================
+ *  THEME TOKENS — edit this block to re-skin the whole app.
+ *  `primary`   = main brand colour (navbar, primary buttons, parent posts)
+ *  `secondary` = playful accent   (FAB, highlights, child posts)
+ *  Both are consumed by Flowbite-Svelte (color="primary" / "secondary") and by
+ *  Tailwind utilities (bg-primary-500, text-secondary-600, ...).
+ *  Swap the hex ramps below for a different vibe — nothing else needs to change.
+ * ============================================================================
+ */
+@theme {
+	/* Brand — deep purple (#450b6f anchored at 700) */
+	--color-primary-50: #f5edfb;
+	--color-primary-100: #e8d6f5;
+	--color-primary-200: #d0aceb;
+	--color-primary-300: #b27ddd;
+	--color-primary-400: #9450c9;
+	--color-primary-500: #7a2fae;
+	--color-primary-600: #5f1d8f;
+	--color-primary-700: #450b6f;
+	--color-primary-800: #38095a;
+	--color-primary-900: #2b0745;
+	--color-primary-950: #1c042e;
+
+	/* Accent — bright green (#74ff40 anchored at 400) */
+	--color-secondary-50: #f1ffe9;
+	--color-secondary-100: #dcffc6;
+	--color-secondary-200: #bdff95;
+	--color-secondary-300: #97ff5f;
+	--color-secondary-400: #74ff40;
+	--color-secondary-500: #4ee61a;
+	--color-secondary-600: #3bc011;
+	--color-secondary-700: #2f9412;
+	--color-secondary-800: #287414;
+	--color-secondary-900: #225f15;
+	--color-secondary-950: #0c3604;
+
+	/* Shape language */
+	--radius-card: 1.25rem;
+
+	/* Soft, playful shadow used on cards / FAB */
+	--shadow-pop: 0 10px 25px -5px rgb(69 11 111 / 0.2), 0 8px 10px -6px rgb(116 255 64 / 0.18);
+}
+
+/* Flat solid page backdrop. */
+html {
+	min-height: 100%;
+}
+
+body {
+	min-height: 100vh;
+	background-color: var(--color-secondary-50);
+}
+
+:where(.dark) body {
+	background-color: var(--color-primary-950);
+}
+
+/* Vote button "pop" when a vote lands. */
+@keyframes vote-pop {
+	0% {
+		transform: scale(1);
+	}
+	40% {
+		transform: scale(1.35);
+	}
+	100% {
+		transform: scale(1);
+	}
+}
+
+.animate-vote-pop {
+	animation: vote-pop 0.35s ease-out;
+}

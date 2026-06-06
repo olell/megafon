@@ -1,27 +1,17 @@
 <script lang="ts">
-	import 'bootswatch/dist/brite/bootstrap.min.css';
-	import 'bootstrap-icons/font/bootstrap-icons.css';
+	import '../app.css';
 	import { resolve } from '$app/paths';
 	import favicon from '$lib/assets/favicon.svg';
-	import {
-		Button,
-		Container,
-		Icon,
-		Nav,
-		Navbar,
-		NavbarBrand,
-		NavItem,
-		Toast,
-		ToastBody,
-		ToastHeader
-	} from '@sveltestrap/sveltestrap';
+	import { Navbar, NavBrand, Toast } from 'flowbite-svelte';
+	import { BullhornSolid, ClockSolid, FireSolid, MoonSolid, SunSolid } from 'flowbite-svelte-icons';
 	import { getSessionApiV1UserGet } from '../client';
 	import Login from '../components/login.svelte';
 	import { messages } from '../messageService.svelte';
-	import { fade } from 'svelte/transition';
+	import { fade, fly } from 'svelte/transition';
 	import { postOrder, user_info } from '../sharedState.svelte';
 	import { dev } from '$app/environment';
 	import { client } from '../client/client.gen';
+	import { initTheme, theme, toggleTheme } from '$lib/theme.svelte';
 
 	if (!dev) {
 		client.setConfig({ ...client.getConfig(), baseUrl: '/' });
@@ -31,9 +21,19 @@
 
 	let loginOpen = $state(false);
 
+	initTheme();
+
+	// Map message service colours -> Flowbite Toast colours.
+	const toastColor = {
+		primary: 'primary',
+		success: 'green',
+		warning: 'yellow',
+		danger: 'red'
+	} as const;
+
 	$effect(() => {
 		getSessionApiV1UserGet({ credentials: 'include' }).then(({ data, error }) => {
-			if (!!error) {
+			if (error) {
 				// create session
 				loginOpen = true;
 				return;
@@ -49,68 +49,65 @@
 	<title>MEGAFON</title>
 </svelte:head>
 
-<Navbar class="mb-3 fixed-top bg-primary navbar-blur" style="border: none;">
-	<NavbarBrand href={resolve('/')}>
-		<p class="fw-bold">
-			<img src={favicon} alt="" height="30" class="d-inline-block ms-2 me-2" />
-			TARMAC - MEGAFON
-		</p>
-	</NavbarBrand>
-	<Nav navbar class="d-inline">
-		<NavItem>
-			<Button
-				color="link"
-				size="md"
-				onclick={() => {
-					postOrder.val = postOrder.val === 'newest' ? 'votes' : 'newest';
-				}}
-			>
-				<Icon name={postOrder.val === 'newest' ? 'clock-fill' : 'star-fill'}></Icon>
-			</Button>
-		</NavItem>
-	</Nav>
+<Navbar
+	fluid
+	class="fixed top-0 right-0 left-0 z-50 border-none bg-primary-600/80 text-white shadow-pop backdrop-blur-md dark:bg-primary-800/80"
+>
+	<NavBrand href={resolve('/')} class="gap-2">
+		<img src={favicon} alt="" height="32" class="h-8 w-8" />
+		<span class="self-center text-lg font-extrabold tracking-tight whitespace-nowrap text-white">
+			TARMAC&nbsp;·&nbsp;MEGAFON
+		</span>
+	</NavBrand>
+
+	<div class="flex items-center gap-1">
+		<button
+			type="button"
+			aria-label="Sortierung umschalten"
+			title={postOrder.val === 'newest' ? 'Neueste zuerst' : 'Beliebteste zuerst'}
+			class="rounded-full p-2 text-white transition-transform hover:scale-110 hover:bg-white/15 active:scale-95"
+			onclick={() => {
+				postOrder.val = postOrder.val === 'newest' ? 'votes' : 'newest';
+			}}
+		>
+			{#if postOrder.val === 'newest'}
+				<ClockSolid class="h-6 w-6" />
+			{:else}
+				<FireSolid class="h-6 w-6" />
+			{/if}
+		</button>
+
+		<button
+			type="button"
+			aria-label="Farbschema umschalten"
+			title={theme.dark ? 'Hell' : 'Dunkel'}
+			class="rounded-full p-2 text-white transition-transform hover:scale-110 hover:bg-white/15 active:scale-95"
+			onclick={toggleTheme}
+		>
+			{#if theme.dark}
+				<SunSolid class="h-6 w-6" />
+			{:else}
+				<MoonSolid class="h-6 w-6" />
+			{/if}
+		</button>
+
+		<BullhornSolid class="ms-1 h-6 w-6 text-secondary-300" />
+	</div>
 </Navbar>
 
-<Login bind:isOpen={loginOpen} />
+<Login bind:open={loginOpen} />
 
-<div style="bottom: 0; left: 0; position: fixed; z-index: 9001;">
+<div class="fixed bottom-0 left-0 z-[9001] flex flex-col gap-2 p-3">
 	{#each messages as message (message.key)}
-		<div class="p-3 mb-1" transition:fade>
-			<Toast class="me-1">
-				<ToastHeader icon={message.color}>{message.title}</ToastHeader>
-				<ToastBody>{message.message}</ToastBody>
+		<div transition:fade>
+			<Toast color={toastColor[message.color]} transition={fly} params={{ x: -200 }}>
+				<span class="font-semibold">{message.title}</span>
+				<span class="ms-1">{message.message}</span>
 			</Toast>
 		</div>
 	{/each}
 </div>
 
-<Container style="padding-top: 6rem">
+<main class="mx-auto w-full max-w-2xl px-3 pt-24 pb-28">
 	{@render children?.()}
-</Container>
-
-<style>
-	:global(.navbar-blur) {
-		position: fixed;
-		top: 0;
-		left: 0;
-		right: 0;
-		z-index: 1000;
-	}
-
-	:global(.navbar-blur::after) {
-		content: '';
-		position: absolute;
-		left: 0;
-		right: 0;
-		bottom: -15px;
-		height: 500px;
-		pointer-events: none;
-		z-index: -1;
-
-		backdrop-filter: blur(100px);
-		-webkit-backdrop-filter: blur(15px);
-
-		-webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, black 100%);
-		mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, black 100%);
-	}
-</style>
+</main>

@@ -1,11 +1,11 @@
 <script lang="ts">
-	import { Button, Form, FormGroup, Input, Modal, ModalBody } from '@sveltestrap/sveltestrap';
+	import { Button, Label, Modal, Textarea } from 'flowbite-svelte';
+	import { FlagOutline } from 'flowbite-svelte-icons';
 	import { flagApiV1PostsFlagPost } from '../client';
 	import { push_api_error } from '../messageService.svelte';
 	import { refreshPosts } from '../sharedState.svelte';
 
-	let { isOpen = $bindable(), post_id } = $props();
-	const toggle = () => (isOpen = !isOpen);
+	let { open = $bindable(), post_id } = $props();
 
 	let value = $state('');
 
@@ -23,18 +23,19 @@
 			push_api_error(error, 'Fehler beim Speichern!');
 		}
 
-		toggle();
+		open = false;
 		refreshPosts();
 	};
 </script>
 
-<Modal autoFocus centered header="Post melden" {isOpen} {toggle}>
-	<ModalBody>
-		<Form onsubmit={handleFlag}>
-			<FormGroup floating label="Bitte beschreibe kurz den Grund">
-				<Input bind:value required />
-			</FormGroup>
-			<Button class="btn-warning float-end">Melden!</Button>
-		</Form>
-	</ModalBody>
+<Modal title="Post melden" bind:open size="sm" class="w-[calc(100%-2rem)]">
+	<form onsubmit={handleFlag} class="flex flex-col gap-3">
+		<div>
+			<Label for="flag-reason" class="mb-1">Bitte beschreibe kurz den Grund</Label>
+			<Textarea id="flag-reason" rows={3} bind:value required class="w-full resize-none" />
+		</div>
+		<Button type="submit" color="red" class="self-end gap-2 font-bold">
+			<FlagOutline class="h-4 w-4" /> Melden!
+		</Button>
+	</form>
 </Modal>

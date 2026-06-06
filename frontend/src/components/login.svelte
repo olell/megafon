@@ -1,14 +1,6 @@
 <script lang="ts">
-	import {
-		Button,
-		Form,
-		FormGroup,
-		FormText,
-		Input,
-		Label,
-		Modal,
-		ModalBody
-	} from '@sveltestrap/sveltestrap';
+	import { Button, Helper, Input, Label, Modal, Radio } from 'flowbite-svelte';
+	import { ArrowRightOutline } from 'flowbite-svelte-icons';
 	import { push_api_error, push_message } from '../messageService.svelte';
 	import {
 		getVapidPublicKeyApiV1NotifyVapidPublicKeyGet,
@@ -16,8 +8,7 @@
 		subscribeApiV1NotifySubscribePost
 	} from '../client';
 
-	let { isOpen = $bindable() } = $props();
-	const toggle = () => (isOpen = !isOpen);
+	let { open = $bindable() } = $props();
 
 	let notify = $state<'none' | 'global' | 'all' | 'user'>('all');
 	let value = $state('');
@@ -108,36 +99,40 @@
 		}
 
 		push_message({ color: 'success', title: 'Hey!', message: `Willkommen ${data.name} 👋` });
-		isOpen = false;
+		open = false;
 		value = '';
 	};
 </script>
 
-<Modal autoFocus centered backdrop="static" header="Hallo {value.trim() || 'Du'}!" {isOpen}>
-	<ModalBody>
-		<Form onsubmit={handleLogin}>
-			<FormGroup floating label="Bitte gib deinen Namen ein">
-				<Input bind:value required />
-				<FormText autofocus class="small"
-					>Achtung, du kannst den Namen später nicht mehr ändern!</FormText
-				>
-			</FormGroup>
-			<Label>Benachrichtigungen</Label>
-			<Input type="radio" bind:group={notify} value="none" label="Niemals" />
-			<Input
-				type="radio"
-				bind:group={notify}
-				value="user"
-				label="Bei '{value.trim() || 'du'}' im Nachrichtentext"
-			/>
-			<Input
-				type="radio"
-				bind:group={notify}
-				value="all"
-				label="Bei '@all' und '{value.trim() || 'du'}' im Nachrichtentext"
-			/>
-			<Input type="radio" bind:group={notify} value="global" label="Bei jedem neuen Post" />
-			<Button class="btn-warning float-end">Los gehts!</Button>
-		</Form>
-	</ModalBody>
+<Modal
+	title="Hallo {value.trim() || 'Du'}! 👋"
+	bind:open
+	dismissable={false}
+	outsideclose={false}
+	size="sm"
+	class="w-[calc(100%-2rem)]"
+>
+	<form onsubmit={handleLogin} class="flex flex-col gap-4">
+		<div>
+			<Label for="username" class="mb-1">Bitte gib deinen Namen ein</Label>
+			<Input id="username" bind:value required placeholder="Dein Name" />
+			<Helper class="mt-1 text-xs">Achtung, du kannst den Namen später nicht mehr ändern!</Helper>
+		</div>
+
+		<fieldset class="flex flex-col gap-2">
+			<legend class="mb-1 font-semibold text-gray-900 dark:text-white">Benachrichtigungen</legend>
+			<Radio bind:group={notify} value="none">Niemals</Radio>
+			<Radio bind:group={notify} value="user">
+				Bei '{value.trim() || 'du'}' im Nachrichtentext
+			</Radio>
+			<Radio bind:group={notify} value="all">
+				Bei '@all' und '{value.trim() || 'du'}' im Nachrichtentext
+			</Radio>
+			<Radio bind:group={notify} value="global">Bei jedem neuen Post</Radio>
+		</fieldset>
+
+		<Button type="submit" color="primary" class="self-end gap-2 font-bold">
+			Los gehts! <ArrowRightOutline class="h-4 w-4" />
+		</Button>
+	</form>
 </Modal>

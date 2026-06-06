@@ -24,7 +24,7 @@ export const push_message = (msg: Message) => {
 };
 
 export const push_api_error = (err: any, default_title: string) => {
-	const msg = { color: 'danger', title: default_title, message: 'An Error Occured!' };
+	const msg: Message = { color: 'danger', title: default_title, message: 'An Error Occured!' };
 	if (typeof err.detail == 'string') {
 		msg.message = err.detail;
 	}
