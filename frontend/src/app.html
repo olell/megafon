@@ -2,7 +2,16 @@
 <html lang="de">
 	<head>
 		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
+		/>
+
+		<!-- PWA / iOS standalone: let the app paint into the status-bar area. -->
+		<meta name="theme-color" content="#450b6f" />
+		<meta name="mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
 		<script>
 			// No-flash dark mode: apply the saved (or system) theme before first paint.

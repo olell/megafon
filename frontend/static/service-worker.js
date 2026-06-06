@@ -43,7 +43,8 @@ self.addEventListener('push', (event) => {
 	event.waitUntil(
 		self.registration.showNotification('Neue Nachricht - MEGAFON!', {
 			body: data,
-			icon: '/app/favicon.svg'
+			icon: '/app/icon-192.png',
+			badge: '/app/icon-192.png'
 		})
 	);
 });

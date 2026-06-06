@@ -1,17 +1,17 @@
 <script lang="ts">
-	import '../app.css';
+	import { browser, dev } from '$app/environment';
 	import { resolve } from '$app/paths';
 	import favicon from '$lib/assets/favicon.svg';
+	import { initTheme, theme, toggleTheme } from '$lib/theme.svelte';
 	import { Navbar, NavBrand, Toast } from 'flowbite-svelte';
 	import { BullhornSolid, ClockSolid, FireSolid, MoonSolid, SunSolid } from 'flowbite-svelte-icons';
+	import { fade, fly } from 'svelte/transition';
+	import '../app.css';
 	import { getSessionApiV1UserGet } from '../client';
+	import { client } from '../client/client.gen';
 	import Login from '../components/login.svelte';
 	import { messages } from '../messageService.svelte';
-	import { fade, fly } from 'svelte/transition';
 	import { postOrder, user_info } from '../sharedState.svelte';
-	import { dev } from '$app/environment';
-	import { client } from '../client/client.gen';
-	import { initTheme, theme, toggleTheme } from '$lib/theme.svelte';
 
 	if (!dev) {
 		client.setConfig({ ...client.getConfig(), baseUrl: '/' });
@@ -22,6 +22,13 @@
 	let loginOpen = $state(false);
 
 	initTheme();
+
+	// Register the service worker so the app is installable and works offline —
+	// independent of whether the user opts into notifications. Skipped in dev to
+	// avoid the network-first cache interfering with Vite HMR.
+	if (browser && !dev && 'serviceWorker' in navigator) {
+		navigator.serviceWorker.register('/app/service-worker.js').catch(() => {});
+	}
 
 	// Map message service colours -> Flowbite Toast colours.
 	const toastColor = {
@@ -45,18 +52,19 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
+	<link rel="apple-touch-icon" href="/app/apple-touch-icon.png" />
 	<link rel="manifest" href="/app/manifest.json" />
 	<title>MEGAFON</title>
 </svelte:head>
 
 <Navbar
 	fluid
-	class="fixed top-0 right-0 left-0 z-50 border-none bg-primary-600/80 text-white shadow-pop backdrop-blur-md dark:bg-primary-800/80"
+	class="fixed top-0 right-0 left-0 z-50 border-none bg-primary-600/80 pt-[calc(0.625rem+env(safe-area-inset-top))] text-white shadow-pop backdrop-blur-md dark:bg-primary-800/80"
 >
 	<NavBrand href={resolve('/')} class="gap-2">
 		<img src={favicon} alt="" height="32" class="h-8 w-8" />
 		<span class="self-center text-lg font-extrabold tracking-tight whitespace-nowrap text-white">
-			TARMAC&nbsp;·&nbsp;MEGAFON
+			TARMAC - MEGAFON
 		</span>
 	</NavBrand>
 
@@ -108,6 +116,6 @@
 	{/each}
 </div>
 
-<main class="mx-auto w-full max-w-2xl px-3 pt-24 pb-28">
+<main class="mx-auto w-full max-w-2xl px-3 pb-28 pt-[calc(6rem+env(safe-area-inset-top))]">
 	{@render children?.()}
 </main>

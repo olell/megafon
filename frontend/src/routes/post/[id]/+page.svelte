@@ -3,7 +3,7 @@
 	import { getPostApiV1PostsInfoPostIdGet, type PostWithChildren } from '../../../client';
 	import CreatePost from '../../../components/createPost.svelte';
 	import PostComponent from '../../../components/post.svelte';
-	import { all_posts, refreshPosts, refreshVotes } from '../../../sharedState.svelte';
+	import { all_posts, refreshPosts, refreshVotes, user_info } from '../../../sharedState.svelte';
 	import { page } from '$app/state';
 	import { push_api_error } from '../../../messageService.svelte';
 	import { base } from '$app/paths';
@@ -14,7 +14,14 @@
 
 	let parent = $state<PostWithChildren>();
 
-	$effect(refreshPosts);
+	// All feed/thread data requires an authenticated session. Hold off until the
+	// user has a session (returning user via cookie, or after entering a name) so
+	// we don't fire requests that 403 and surface "not authenticated" on load.
+	$effect(() => {
+		if (user_info.val) {
+			refreshPosts();
+		}
+	});
 	$effect(() => {
 		if (all_posts.val.length) {
 			refreshVotes();
@@ -22,6 +29,7 @@
 	});
 
 	$effect(() => {
+		if (!user_info.val) return;
 		if (id === 'top' || !id) {
 			const interval = setInterval(refreshPosts, 10000);
 			return () => {
@@ -85,7 +93,7 @@
 <button
 	type="button"
 	aria-label="Neuer Beitrag"
-	class="fixed right-[5vw] bottom-[5vw] z-40 flex h-14 w-14 items-center justify-center rounded-full bg-secondary-100 text-secondary-700 shadow-pop transition-transform hover:scale-110 hover:bg-secondary-200 active:scale-95 dark:bg-secondary-900/50 dark:text-secondary-300"
+	class="fixed right-[5vw] bottom-[5vw] z-40 flex h-14 w-14 items-center justify-center rounded-full bg-secondary-200 text-secondary-700 shadow-pop transition-transform hover:scale-110 hover:bg-secondary-300 active:scale-95 dark:bg-secondary-900 dark:text-secondary-200"
 	onclick={() => (createPostOpen = true)}
 >
 	<EditOutline class="h-6 w-6" />

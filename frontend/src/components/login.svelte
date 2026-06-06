@@ -7,62 +7,98 @@
 		initSessionApiV1UserPost,
 		subscribeApiV1NotifySubscribePost
 	} from '../client';
+	import { user_info } from '../sharedState.svelte';
 
 	let { open = $bindable() } = $props();
 
 	let notify = $state<'none' | 'global' | 'all' | 'user'>('all');
 	let value = $state('');
 
+	const isIos = () =>
+		/ip(hone|ad|od)/i.test(navigator.userAgent) ||
+		// iPadOS reports as "MacIntel" but has a touch screen.
+		(navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+	const isStandalone = () =>
+		window.matchMedia?.('(display-mode: standalone)').matches ||
+		// iOS Safari exposes its own standalone flag.
+		(navigator as unknown as { standalone?: boolean }).standalone === true;
+
 	const enableNotifications = async () => {
-		if ('serviceWorker' in navigator && 'PushManager' in window) {
-			const reg = await navigator.serviceWorker.register('/app/service-worker.js');
+		const supported =
+			'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 
-			const permission = await Notification.requestPermission();
-			if (permission !== 'granted') {
+		if (!supported) {
+			// Work out *why* push is unavailable and give an actionable hint, rather
+			// than a blanket "not supported".
+			if (!window.isSecureContext) {
+				// Over plain HTTP the SW/Push APIs don't exist in any browser.
 				push_message({
-					title: 'Nicht Erlaubt!',
-					message: 'Benachrichtigungen sind nicht erlaubt!',
-					color: 'danger'
+					color: 'danger',
+					title: 'Nicht möglich',
+					message: 'Benachrichtigungen brauchen eine sichere HTTPS-Verbindung.'
 				});
-				return;
+			} else if (isIos() && !isStandalone()) {
+				// iOS only exposes Web Push to an installed (Home-Screen) PWA.
+				push_message({
+					color: 'danger',
+					title: 'Erst installieren',
+					message:
+						'Auf dem iPhone: über das Teilen-Menü „Zum Home-Bildschirm“ hinzufügen, dann erneut anmelden.'
+				});
+			} else {
+				push_message({
+					color: 'danger',
+					title: 'Fehler!',
+					message: 'Dein Browser unterstützt dieses Feature nicht :,('
+				});
 			}
+			return;
+		}
+
+		// The worker is registered on app load (see +layout.svelte); reuse the
+		// active registration here instead of registering a second time.
+		const reg = await navigator.serviceWorker.ready;
+
+		const permission = await Notification.requestPermission();
+		if (permission !== 'granted') {
 			push_message({
-				title: 'Erlaubt!',
-				message: 'Benachrichtigungen sind erlaubt!',
-				color: 'success'
+				title: 'Nicht Erlaubt!',
+				message: 'Benachrichtigungen sind nicht erlaubt!',
+				color: 'danger'
 			});
+			return;
+		}
+		push_message({
+			title: 'Erlaubt!',
+			message: 'Benachrichtigungen sind erlaubt!',
+			color: 'success'
+		});
 
-			const { data, error } = await getVapidPublicKeyApiV1NotifyVapidPublicKeyGet({
-				credentials: 'include'
-			});
+		const { data, error } = await getVapidPublicKeyApiV1NotifyVapidPublicKeyGet({
+			credentials: 'include'
+		});
 
-			if (error || !data) {
-				push_api_error(error, 'Schlüsselabfrage fehlgeschlagen!');
-				return;
+		if (error || !data) {
+			push_api_error(error, 'Schlüsselabfrage fehlgeschlagen!');
+			return;
+		}
+
+		const { publicKey } = data as { publicKey: string };
+		const sub = await reg.pushManager.subscribe({
+			userVisibleOnly: true,
+			applicationServerKey: urlBase64ToUint8Array(publicKey)
+		});
+
+		const result = await subscribeApiV1NotifySubscribePost({
+			credentials: 'include',
+			body: {
+				subscription: JSON.stringify(sub),
+				mode: notify
 			}
-
-			const { publicKey } = data as { publicKey: string };
-			const sub = await reg.pushManager.subscribe({
-				userVisibleOnly: true,
-				applicationServerKey: urlBase64ToUint8Array(publicKey)
-			});
-
-			const result = await subscribeApiV1NotifySubscribePost({
-				credentials: 'include',
-				body: {
-					subscription: JSON.stringify(sub),
-					mode: notify
-				}
-			});
-			if (result.error) {
-				push_api_error(result.error, 'Fehler beim Subscribe!');
-			}
-		} else {
-			push_message({
-				color: 'danger',
-				title: 'Fehler!',
-				message: 'Dein Browser unterstütz dieses Feature nicht :,('
-			});
+		});
+		if (result.error) {
+			push_api_error(result.error, 'Fehler beim Subscribe!');
 		}
 	};
 
@@ -97,6 +133,9 @@
 		if (notify !== 'none') {
 			enableNotifications();
 		}
+
+		// Mark the session as established so the feed/votes start loading.
+		user_info.val = data;
 
 		push_message({ color: 'success', title: 'Hey!', message: `Willkommen ${data.name} 👋` });
 		open = false;
