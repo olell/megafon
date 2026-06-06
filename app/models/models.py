@@ -3,6 +3,7 @@ from enum import Enum
 from typing import Dict, Literal, Optional, Self
 import uuid
 from pydantic import BaseModel, computed_field
+from sqlalchemy import UniqueConstraint
 from sqlmodel import JSON, Column, Field
 from sqlmodel import Relationship, SQLModel
 from datetime import datetime
@@ -46,7 +47,7 @@ class Post(SQLModel, table=True):
     @computed_field
     @property
     def created_by_name(self) -> str:
-        return self.created_by.name
+        return self.created_by.name if self.created_by else "anonymous"
 
     @computed_field
     @property
@@ -91,6 +92,8 @@ class PostCreate(BaseModel):
 
 
 class Vote(SQLModel, table=True):
+    __table_args__ = (UniqueConstraint("created_by_id", "post_id"),)
+
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
 
     value: int = Field(le=1, ge=-1)
@@ -103,6 +106,8 @@ class Vote(SQLModel, table=True):
 
 
 class Flag(SQLModel, table=True):
+    __table_args__ = (UniqueConstraint("created_by_id", "post_id"),)
+
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
 
     post_id: Optional[uuid.UUID] = Field(default=None, foreign_key="post.id")
