@@ -1,4 +1,5 @@
 from logging import INFO, getLevelNamesMapping
+from pathlib import Path
 import secrets
 from typing import Annotated, Any, Literal
 
@@ -6,6 +7,7 @@ from pydantic import (
     AnyUrl,
     BaseModel,
     BeforeValidator,
+    Field,
     computed_field,
 )
 from pydantic_core import MultiHostUrl
@@ -18,6 +20,18 @@ def parse_cors(v: Any) -> list[str] | str:
     elif isinstance(v, list | str):
         return v
     raise ValueError(v)
+
+
+def load_or_create_secret_key() -> str:
+    """Persist a generated secret key so it survives restarts and is shared
+    across worker processes. An explicit MEGAFON_SECRET_KEY env var still wins.
+    """
+    key_file = Path(".secret_key")
+    if key_file.exists():
+        return key_file.read_text().strip()
+    key = secrets.token_urlsafe(32)
+    key_file.write_text(key)
+    return key
 
 
 class PublicSettings(BaseModel): ...
@@ -38,8 +52,8 @@ class Settings(BaseSettings):
         "$argon2i$v=19$m=16,t=2,p=1$Nk9LTEFLRmtWYUExTXVVZw$5JDkSZaDa89JoVSoe6UiUQ"
     )
 
-    SECRET_KEY: str = secrets.token_urlsafe(32)
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 11520  # 8 days
+    SECRET_KEY: str = Field(default_factory=load_or_create_secret_key)
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 365  # 1 year
 
     ## NETWORK
     API_V1_STR: str = "/api/v1"
