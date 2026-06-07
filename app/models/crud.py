@@ -71,6 +71,18 @@ def schedule_notifications(post_id: uuid.UUID):
         content = post.content.lower()
         at_all = "@all" in content
 
+        # A reply notifies the parent post's author directly (any mode except
+        # NONE), independent of @mentions. Skip self-replies.
+        reply_target_id = None
+        if post.parent_id is not None:
+            parent = session.get(Post, post.parent_id)
+            if (
+                parent is not None
+                and parent.created_by_id is not None
+                and parent.created_by_id != post.created_by_id
+            ):
+                reply_target_id = parent.created_by_id
+
         logger.info("Scheduled notifications for %s", content)
 
         for user in all_users:
@@ -92,16 +104,29 @@ def schedule_notifications(post_id: uuid.UUID):
             elif user.subscription_mode == SubscriptionMode.USER:
                 do_notify = at_user
 
+            # The reply signal forces a notification and its more specific
+            # message wins, so the parent author is never double-notified when
+            # an @all / global rule would also have matched.
+            is_reply_target = user.id == reply_target_id
+            if is_reply_target:
+                do_notify = True
+
             logger.debug(
-                "Notify %s: %s (%s, %s)", user.name, do_notify, at_user, at_all
+                "Notify %s: %s (mention=%s, all=%s, reply=%s)",
+                user.name,
+                do_notify,
+                at_user,
+                at_all,
+                is_reply_target,
             )
             if not do_notify:
                 continue
 
-            push_notification(
-                user,
-                f"{post.created_by_name}: {post.content}",
-            )
+            if is_reply_target:
+                message = f"{post.created_by_name} replied: {post.content}"
+            else:
+                message = f"{post.created_by_name}: {post.content}"
+            push_notification(user, message)
 
 
 def push_notification(user: User, message: str):
