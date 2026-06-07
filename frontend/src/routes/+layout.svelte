@@ -2,12 +2,11 @@
 	import { browser, dev } from '$app/environment';
 	import { resolve } from '$app/paths';
 	import favicon from '$lib/assets/favicon.svg';
+	import { initInstall, install, promptInstall } from '$lib/pwaInstall.svelte';
 	import { initTheme, theme, toggleTheme } from '$lib/theme.svelte';
-	import { install, initInstall, promptInstall } from '$lib/pwaInstall.svelte';
 	import { Modal, Navbar, NavBrand, Toast } from 'flowbite-svelte';
 	import {
 		ArrowUpFromBracketOutline,
-		BullhornSolid,
 		ClockSolid,
 		DownloadOutline,
 		FireSolid,
@@ -130,7 +129,6 @@
 			{/if}
 		</button>
 
-		<BullhornSolid class="ms-1 h-6 w-6 text-secondary-300" />
 	</div>
 </Navbar>
 
