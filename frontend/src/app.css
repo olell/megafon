@@ -54,6 +54,8 @@
 /* Flat solid page backdrop. */
 html {
 	min-height: 100%;
+	/* Disable the browser's own pull-to-refresh; the app provides its own. */
+	overscroll-behavior-y: contain;
 }
 
 body {
