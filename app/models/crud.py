@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 import json
 from logging import getLogger
 import re
-from typing import Literal
+from typing import Literal, Optional
 import uuid
 from fastapi import HTTPException, status
 from py_vapid import Vapid
@@ -12,8 +12,24 @@ from sqlmodel import Session, select
 
 from app.core.config import settings
 from app.core.db import engine
-from app.models.models import Flag, Post, PostCreate, SubscriptionMode, User, Vote
-from sqlalchemy import func
+from app.models.models import (
+    AdminActivityPoint,
+    AdminFlagItem,
+    AdminFlagReport,
+    AdminPostItem,
+    AdminStats,
+    AdminTopPost,
+    AdminTopPoster,
+    AdminUserItem,
+    BanMode,
+    Flag,
+    Post,
+    PostCreate,
+    SubscriptionMode,
+    User,
+    Vote,
+)
+from sqlalchemy import func, or_
 
 logger = getLogger(__name__)
 
@@ -127,13 +143,24 @@ def get_posts_by_timespan(
     max_hours: int,
     limit: int,
     order: Literal["votes", "newest"],
+    viewer_id: Optional[uuid.UUID] = None,
 ) -> list[Post]:
     start_time = since - timedelta(hours=max_hours)
     query = (
         select(Post)
         .where(Post.created_at < since, Post.created_at >= start_time)
         .where(Post.parent_id.is_(None))
-        .where(~Post.flags.any())
+        .where(~Post.flags.any())  # flagged posts stay auto-hidden
+        .where(~Post.hidden)  # admin soft-hide
+        # Hide content from ban-hidden / shadow-banned authors, but let a
+        # shadow-banned viewer still see their own posts (they must not notice).
+        .join(User, Post.created_by_id == User.id)
+        .where(
+            or_(
+                User.ban_mode.notin_([BanMode.BLOCKED_HIDDEN, BanMode.SHADOW]),
+                User.id == viewer_id,
+            )
+        )
     )
 
     if order == "votes":
@@ -224,3 +251,228 @@ def flag_post(session: Session, user: User, post: uuid.UUID, notice: str):
         raise HTTPException(
             status_code=status.HTTP_406_NOT_ACCEPTABLE, detail="Failed to report!"
         )
+
+
+# ============================================================================
+#  ADMIN
+# ============================================================================
+
+
+def list_flagged_posts(session: Session) -> list[AdminFlagItem]:
+    """All posts that currently carry at least one flag, with report details."""
+    posts = session.exec(select(Post).where(Post.flags.any())).all()
+    posts.sort(key=lambda p: len(p.flags), reverse=True)
+    return [
+        AdminFlagItem(
+            id=p.id,
+            content=p.content,
+            created_by_name=p.created_by_name,
+            created_at=p.created_at,
+            parent_id=p.parent_id,
+            hidden=p.hidden,
+            upvotes=p.upvotes,
+            downvotes=p.downvotes,
+            reports=[
+                AdminFlagReport(
+                    reporter=f.created_by.name if f.created_by else "anonymous",
+                    notice=f.notice,
+                )
+                for f in p.flags
+            ],
+        )
+        for p in posts
+    ]
+
+
+def dismiss_flags(session: Session, post_id: uuid.UUID) -> Post:
+    """Delete all flags on a post, restoring it to the feed."""
+    post = get_post_by_id(session, post_id)
+    for flag in list(post.flags):
+        session.delete(flag)
+    session.commit()
+    session.refresh(post)
+    return post
+
+
+def set_post_hidden(session: Session, post_id: uuid.UUID, hidden: bool) -> Post:
+    post = get_post_by_id(session, post_id)
+    post.hidden = hidden
+    session.add(post)
+    session.commit()
+    session.refresh(post)
+    return post
+
+
+def delete_post_cascade(session: Session, post_id: uuid.UUID) -> None:
+    """Permanently delete a post plus its votes, flags and replies.
+
+    No DB-level cascade is configured, so children are removed recursively.
+    """
+    post = get_post_by_id(session, post_id)
+    for child in list(post.children):
+        delete_post_cascade(session, child.id)
+    for vote in list(post.votes):
+        session.delete(vote)
+    for flag in list(post.flags):
+        session.delete(flag)
+    session.delete(post)
+    session.commit()
+
+
+def list_users_with_stats(
+    session: Session, search: Optional[str] = None
+) -> list[AdminUserItem]:
+    query = select(User)
+    if search:
+        query = query.where(User.name.ilike(f"%{search}%"))
+    users = session.exec(query).all()
+    return [
+        AdminUserItem(
+            id=u.id,
+            name=u.name,
+            ban_mode=u.ban_mode,
+            is_moderator=u.is_moderator,
+            subscription_mode=u.subscription_mode,
+            post_count=len(u.posts),
+            flags_received=sum(len(p.flags) for p in u.posts),
+        )
+        for u in sorted(users, key=lambda u: len(u.posts), reverse=True)
+    ]
+
+
+def set_user_ban(session: Session, user_id: uuid.UUID, mode: BanMode) -> User:
+    user = get_user_by_id(session, str(user_id))
+    user.ban_mode = mode
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    return user
+
+
+def set_user_moderator(session: Session, user_id: uuid.UUID, value: bool) -> User:
+    user = get_user_by_id(session, str(user_id))
+    user.is_moderator = value
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    return user
+
+
+def list_all_posts(
+    session: Session,
+    limit: int = 100,
+    offset: int = 0,
+    include_hidden: bool = True,
+    user_id: Optional[uuid.UUID] = None,
+    search: Optional[str] = None,
+) -> list[AdminPostItem]:
+    """Full message history: every post (top-level and replies), newest first."""
+    query = select(Post)
+    if not include_hidden:
+        query = query.where(~Post.hidden)
+    if user_id is not None:
+        query = query.where(Post.created_by_id == user_id)
+    if search:
+        query = query.where(Post.content.ilike(f"%{search}%"))
+    query = query.order_by(Post.created_at.desc()).limit(limit).offset(offset)
+    posts = session.exec(query).all()
+    return [
+        AdminPostItem(
+            id=p.id,
+            content=p.content,
+            created_by_name=p.created_by_name,
+            created_by_id=p.created_by_id,
+            created_at=p.created_at,
+            parent_id=p.parent_id,
+            hidden=p.hidden,
+            upvotes=p.upvotes,
+            downvotes=p.downvotes,
+            flag_count=len(p.flags),
+        )
+        for p in posts
+    ]
+
+
+def compute_stats(session: Session) -> AdminStats:
+    total_users = session.exec(select(func.count()).select_from(User)).one()
+    total_posts = session.exec(
+        select(func.count()).select_from(Post).where(Post.parent_id.is_(None))
+    ).one()
+    total_replies = session.exec(
+        select(func.count()).select_from(Post).where(Post.parent_id.is_not(None))
+    ).one()
+    total_votes = session.exec(select(func.count()).select_from(Vote)).one()
+    active_flags = session.exec(
+        select(func.count(func.distinct(Flag.post_id)))
+    ).one()
+    hidden_posts = session.exec(
+        select(func.count()).select_from(Post).where(Post.hidden)
+    ).one()
+    banned_users = session.exec(
+        select(func.count()).select_from(User).where(User.ban_mode != BanMode.NONE)
+    ).one()
+
+    # Activity over the last 30 days, bucketed per calendar day.
+    cutoff = datetime.now() - timedelta(days=30)
+    posts_by_day = dict(
+        session.exec(
+            select(func.date(Post.created_at), func.count())
+            .where(Post.created_at >= cutoff)
+            .group_by(func.date(Post.created_at))
+        ).all()
+    )
+    votes_by_day: dict = {}  # Vote has no created_at; left empty intentionally.
+    days = sorted(set(posts_by_day) | set(votes_by_day))
+    activity = [
+        AdminActivityPoint(
+            day=str(d),
+            posts=int(posts_by_day.get(d, 0)),
+            votes=int(votes_by_day.get(d, 0)),
+        )
+        for d in days
+    ]
+
+    top_posters = [
+        AdminTopPoster(name=name, post_count=int(count))
+        for name, count in session.exec(
+            select(User.name, func.count(Post.id))
+            .join(Post, Post.created_by_id == User.id)
+            .group_by(User.id)
+            .order_by(func.count(Post.id).desc())
+            .limit(10)
+        ).all()
+    ]
+
+    top_post_rows = session.exec(
+        select(Post.id, func.coalesce(func.sum(Vote.value), 0).label("score"))
+        .outerjoin(Vote, Vote.post_id == Post.id)
+        .group_by(Post.id)
+        .order_by(func.coalesce(func.sum(Vote.value), 0).desc())
+        .limit(10)
+    ).all()
+    top_posts = []
+    for post_id, score in top_post_rows:
+        post = session.get(Post, post_id)
+        if post is None:
+            continue
+        top_posts.append(
+            AdminTopPost(
+                id=post.id,
+                content=post.content,
+                created_by_name=post.created_by_name,
+                score=int(score),
+            )
+        )
+
+    return AdminStats(
+        total_users=int(total_users),
+        total_posts=int(total_posts),
+        total_replies=int(total_replies),
+        total_votes=int(total_votes),
+        active_flags=int(active_flags),
+        hidden_posts=int(hidden_posts),
+        banned_users=int(banned_users),
+        activity=activity,
+        top_posters=top_posters,
+        top_posts=top_posts,
+    )

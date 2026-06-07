@@ -54,6 +54,7 @@ class Settings(BaseSettings):
 
     SECRET_KEY: str = Field(default_factory=load_or_create_secret_key)
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 365  # 1 year
+    ADMIN_TOKEN_EXPIRE_MINUTES: int = 120  # short-lived admin session
 
     ## NETWORK
     API_V1_STR: str = "/api/v1"

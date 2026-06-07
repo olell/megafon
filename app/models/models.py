@@ -16,6 +16,17 @@ class SubscriptionMode(Enum):
     GLOBAL = "global"
 
 
+class BanMode(str, Enum):
+    NONE = "none"
+    # Can't perform authenticated actions; existing content stays visible.
+    BLOCKED = "blocked"
+    # Can't perform authenticated actions; existing content hidden from the feed.
+    BLOCKED_HIDDEN = "blocked_hidden"
+    # Acts normally and never notices, but content is hidden from everyone else
+    # while remaining visible to the user themselves.
+    SHADOW = "shadow"
+
+
 class User(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: str
@@ -26,6 +37,19 @@ class User(SQLModel, table=True):
 
     subscription: str = Field(default="{}", max_length=1024)
     subscription_mode: SubscriptionMode = SubscriptionMode.NONE
+
+    ban_mode: BanMode = Field(default=BanMode.NONE)
+    # Grants access to the admin panel's flag-moderation section only.
+    is_moderator: bool = Field(default=False)
+
+
+class UserPublic(BaseModel):
+    """Session payload. Deliberately omits `ban_mode` (a shadow-banned user must
+    not learn they're banned) and the raw push `subscription`."""
+
+    id: uuid.UUID
+    name: str
+    is_moderator: bool
 
 
 class Post(SQLModel, table=True):
@@ -65,6 +89,9 @@ class Post(SQLModel, table=True):
         return sum([c.children_count for c in self.children]) + len(self.children)
 
     content: str
+
+    # Admin soft-hide: kept in the DB / history but removed from the public feed.
+    hidden: bool = Field(default=False)
 
     votes: list["Vote"] = Relationship(back_populates="post")
     flags: list["Flag"] = Relationship(back_populates="post")
@@ -117,3 +144,82 @@ class Flag(SQLModel, table=True):
     created_by: Optional[User] = Relationship(back_populates="created_flags")
 
     notice: Optional[str] = None
+
+
+# ============================================================================
+#  ADMIN RESPONSE SCHEMAS (read-only; never persisted)
+# ============================================================================
+
+
+class AdminFlagReport(BaseModel):
+    reporter: str
+    notice: Optional[str]
+
+
+class AdminFlagItem(BaseModel):
+    id: uuid.UUID
+    content: str
+    created_by_name: str
+    created_at: datetime
+    parent_id: Optional[uuid.UUID]
+    hidden: bool
+    upvotes: int
+    downvotes: int
+    reports: list[AdminFlagReport]
+
+
+class AdminUserItem(BaseModel):
+    id: uuid.UUID
+    name: str
+    ban_mode: BanMode
+    is_moderator: bool
+    subscription_mode: SubscriptionMode
+    post_count: int
+    flags_received: int
+
+
+class AdminPostItem(BaseModel):
+    id: uuid.UUID
+    content: str
+    created_by_name: str
+    created_by_id: Optional[uuid.UUID]
+    created_at: datetime
+    parent_id: Optional[uuid.UUID]
+    hidden: bool
+    upvotes: int
+    downvotes: int
+    flag_count: int
+
+
+class AdminActivityPoint(BaseModel):
+    day: str
+    posts: int
+    votes: int
+
+
+class AdminTopPoster(BaseModel):
+    name: str
+    post_count: int
+
+
+class AdminTopPost(BaseModel):
+    id: uuid.UUID
+    content: str
+    created_by_name: str
+    score: int
+
+
+class AdminStats(BaseModel):
+    # Totals
+    total_users: int
+    total_posts: int
+    total_replies: int
+    total_votes: int
+    active_flags: int
+    # Moderation metrics
+    hidden_posts: int
+    banned_users: int
+    # Activity over time (per day) + top contributors
+    activity: list[AdminActivityPoint]
+    top_posters: list[AdminTopPoster]
+    top_posts: list[AdminTopPost]

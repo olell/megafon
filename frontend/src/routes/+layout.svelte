@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { browser, dev } from '$app/environment';
-	import { resolve } from '$app/paths';
+	import { goto } from '$app/navigation';
+	import { base, resolve } from '$app/paths';
 	import favicon from '$lib/assets/favicon.svg';
 	import { initInstall, install, promptInstall } from '$lib/pwaInstall.svelte';
 	import { initTheme, theme, toggleTheme } from '$lib/theme.svelte';
@@ -18,6 +19,7 @@
 	import '../app.css';
 	import { getSessionApiV1UserGet } from '../client';
 	import { client } from '../client/client.gen';
+	import AdminLogin from '../components/adminLogin.svelte';
 	import Login from '../components/login.svelte';
 	import { messages } from '../messageService.svelte';
 	import { postOrder, user_info } from '../sharedState.svelte';
@@ -30,6 +32,29 @@
 
 	let loginOpen = $state(false);
 	let iosHintOpen = $state(false);
+	let adminLoginOpen = $state(false);
+
+	// Hidden admin entry: 5 quick taps on the logo (Android-dev-mode style).
+	// Promoted moderators already hold a valid session, so they go straight to
+	// the panel; everyone else gets the root-credential login modal.
+	let logoTaps = 0;
+	let logoTapTimer: ReturnType<typeof setTimeout>;
+	const onLogoTap = () => {
+		logoTaps++;
+		clearTimeout(logoTapTimer);
+		if (logoTaps >= 5) {
+			logoTaps = 0;
+			if (user_info.val?.is_moderator) {
+				goto(`${base}/admin`);
+			} else {
+				adminLoginOpen = true;
+			}
+			return;
+		}
+		logoTapTimer = setTimeout(() => {
+			logoTaps = 0;
+		}, 600);
+	};
 
 	initTheme();
 	initInstall();
@@ -80,7 +105,7 @@
 	fluid
 	class="fixed top-0 right-0 left-0 z-50 border-none bg-primary-600/80 pt-[calc(0.625rem+env(safe-area-inset-top))] text-white shadow-pop backdrop-blur-md dark:bg-primary-800/80"
 >
-	<NavBrand href={resolve('/')} class="gap-2">
+	<NavBrand href={resolve('/')} class="gap-2" onclick={onLogoTap}>
 		<img src={favicon} alt="" height="32" class="h-8 w-8" />
 		<span class="self-center text-lg font-extrabold tracking-tight whitespace-nowrap text-white">
 			TARMAC - MEGAFON
@@ -133,6 +158,8 @@
 </Navbar>
 
 <Login bind:open={loginOpen} />
+
+<AdminLogin bind:open={adminLoginOpen} />
 
 <Modal title="App installieren" bind:open={iosHintOpen} size="sm" class="w-[calc(100%-2rem)]">
 	<div class="space-y-4 text-base text-gray-700 dark:text-gray-200">

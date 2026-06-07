@@ -2,12 +2,13 @@ import {
 	getPostsApiV1PostsGet,
 	getVotesApiV1PostsVotesGet,
 	type Post,
-	type User,
+	type UserPublic,
 	type Vote
 } from './client';
 import { push_api_error } from './messageService.svelte';
 
-export const user_info = $state<{ val: User | null }>({ val: null });
+export const user_info = $state<{ val: UserPublic | null }>({ val: null });
+export const admin_info = $state<{ val: boolean }>({ val: false });
 export const all_posts = $state<{ val: Post[] }>({ val: [] });
 
 export const postOrder = $state<{ val: 'newest' | 'votes' }>({ val: 'newest' });

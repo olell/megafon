@@ -1,6 +1,6 @@
 from typing import Literal, Optional
 import uuid
-from fastapi import APIRouter, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, HTTPException, status
 from datetime import datetime
 
 from pydantic import BaseModel
@@ -15,7 +15,7 @@ from app.models.crud import (
     schedule_notifications,
     vote_post,
 )
-from app.models.models import Post, PostCreate, PostWithChildren, Vote
+from app.models.models import BanMode, Post, PostCreate, PostWithChildren, Vote
 
 router = APIRouter(prefix="/posts")
 
@@ -32,7 +32,21 @@ class FlagData(BaseModel):
 
 @router.get("/info/{post_id}", response_model=PostWithChildren)
 def get_post(*, session: SessionDep, post_id: uuid.UUID, user: CurrentUser):
-    return get_post_by_id(session, post_id)
+    post = get_post_by_id(session, post_id)
+
+    # Hide non-public posts from everyone but their author: admin-hidden posts,
+    # and posts from ban-hidden / shadow-banned authors.
+    author = post.created_by
+    author_hidden = author is not None and author.ban_mode in (
+        BanMode.BLOCKED_HIDDEN,
+        BanMode.SHADOW,
+    )
+    if (post.hidden or author_hidden) and post.created_by_id != user.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Post not found!"
+        )
+
+    return post
 
 
 @router.get("/")
@@ -48,7 +62,9 @@ def get_posts(
     if since is None:
         since = datetime.now()
 
-    posts = get_posts_by_timespan(session, since, max_hours, limit, order)
+    posts = get_posts_by_timespan(
+        session, since, max_hours, limit, order, viewer_id=user.id
+    )
     return posts
 
 

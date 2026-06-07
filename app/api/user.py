@@ -7,7 +7,7 @@ from app.api.deps import CurrentUser
 from app.core.db import SessionDep
 from app.core.config import settings
 from app.models.crud import create_user
-from app.models.models import User
+from app.models.models import UserPublic
 
 router = APIRouter(prefix="/user")
 
@@ -17,7 +17,9 @@ class SessionInit(BaseModel):
 
 
 @router.post("/")
-def init_session(*, session: SessionDep, data: SessionInit, response: Response) -> User:
+def init_session(
+    *, session: SessionDep, data: SessionInit, response: Response
+) -> UserPublic:
     user = create_user(session, data.username)
 
     max_age = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
@@ -42,5 +44,5 @@ def init_session(*, session: SessionDep, data: SessionInit, response: Response) 
 
 
 @router.get("/")
-def get_session(*, session: SessionDep, user: CurrentUser) -> User:
+def get_session(*, session: SessionDep, user: CurrentUser) -> UserPublic:
     return user
