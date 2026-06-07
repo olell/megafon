@@ -1,4 +1,4 @@
-const CACHE = 'megafon-v1';
+const CACHE = 'megafon-v2';
 
 self.addEventListener('install', () => {
 	self.skipWaiting();
@@ -23,8 +23,29 @@ self.addEventListener('fetch', (event) => {
 	// Never cache API calls — the feed/votes must stay live.
 	if (url.pathname.startsWith('/api/')) return;
 
-	// Network-first for the app shell/static assets, falling back to the cached
-	// copy when offline so the installed PWA still loads.
+	// Cache-first for content-hashed build assets: the filename changes whenever
+	// the content changes, so a cached copy is always valid and never needs the
+	// network. After the first visit the whole app shell (JS + CSS) loads with
+	// zero network round-trips — instant even on a slow/flaky connection.
+	if (url.pathname.includes('/_app/immutable/')) {
+		event.respondWith(
+			caches.match(req).then(
+				(cached) =>
+					cached ||
+					fetch(req).then((res) => {
+						if (res.ok) {
+							const copy = res.clone();
+							caches.open(CACHE).then((cache) => cache.put(req, copy));
+						}
+						return res;
+					})
+			)
+		);
+		return;
+	}
+
+	// Network-first for the HTML shell / non-hashed static assets (index.html,
+	// manifest, icons) so updates are picked up, falling back to cache offline.
 	event.respondWith(
 		fetch(req)
 			.then((res) => {
@@ -34,7 +55,7 @@ self.addEventListener('fetch', (event) => {
 				}
 				return res;
 			})
-			.catch(() => caches.match(req))
+			.catch(() => caches.match(req).then((cached) => cached || caches.match('/app/index.html')))
 	);
 });
 
