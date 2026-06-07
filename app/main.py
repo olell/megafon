@@ -10,6 +10,7 @@ from sqlmodel import Session
 from app.core.config import settings
 from app.core.db import drop_db, engine, init_db
 from app.api.main import router as api_router
+from app.api.metrics import router as metrics_router
 
 
 @asynccontextmanager
@@ -48,6 +49,8 @@ if settings.all_cors_origins:
     )
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
+# Prometheus scrape target at the conventional root path /metrics.
+app.include_router(metrics_router)
 
 build_path = Path("frontend/build")
 build_path.mkdir(parents=True, exist_ok=True)
