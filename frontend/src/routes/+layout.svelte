@@ -37,9 +37,12 @@
 	// Hidden admin entry: 5 quick taps on the logo (Android-dev-mode style).
 	// Promoted moderators already hold a valid session, so they go straight to
 	// the panel; everyone else gets the root-credential login modal.
+	// We take over the logo's navigation entirely (preventDefault) so the 5th
+	// tap can route to /admin instead of the browser following the home link.
 	let logoTaps = 0;
 	let logoTapTimer: ReturnType<typeof setTimeout>;
-	const onLogoTap = () => {
+	const onLogoTap = (e: MouseEvent) => {
+		e.preventDefault();
 		logoTaps++;
 		clearTimeout(logoTapTimer);
 		if (logoTaps >= 5) {
@@ -54,6 +57,8 @@
 		logoTapTimer = setTimeout(() => {
 			logoTaps = 0;
 		}, 600);
+		// Normal tap still behaves like the home link.
+		goto(resolve('/'));
 	};
 
 	initTheme();
