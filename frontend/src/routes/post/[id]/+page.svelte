@@ -4,7 +4,13 @@
 	import CreatePost from '../../../components/createPost.svelte';
 	import PostComponent from '../../../components/post.svelte';
 	import PullToRefresh from '../../../components/pullToRefresh.svelte';
-	import { all_posts, refreshPosts, refreshVotes, user_info } from '../../../sharedState.svelte';
+	import {
+		all_posts,
+		connectFeedStream,
+		refreshPosts,
+		refreshVotes,
+		user_info
+	} from '../../../sharedState.svelte';
 	import { page } from '$app/state';
 	import { push_api_error } from '../../../messageService.svelte';
 	import { base } from '$app/paths';
@@ -53,9 +59,13 @@
 	$effect(() => {
 		if (!user_info.val) return;
 		if (id === 'top' || !id) {
-			const interval = setInterval(refreshPosts, 10000);
+			// Live updates via SSE; the slow poll is just a fallback in case the
+			// stream drops silently (proxy timeout, device sleep/wake).
+			const disconnect = connectFeedStream();
+			const fallback = setInterval(refreshPosts, 60000);
 			return () => {
-				clearInterval(interval);
+				disconnect();
+				clearInterval(fallback);
 			};
 		} else {
 			loadThread(id);

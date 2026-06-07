@@ -132,6 +132,16 @@ class Vote(SQLModel, table=True):
     created_by: Optional[User] = Relationship(back_populates="votes")
 
 
+class Event(SQLModel, table=True):
+    # Append-only feed log driving SSE. The autoincrement id is the monotonic
+    # cursor handed to clients as Last-Event-ID. post_id is a plain UUID (NOT a
+    # foreign key) so the admin cascade delete never trips on dangling log rows.
+    id: Optional[int] = Field(default=None, primary_key=True)
+    created_at: datetime = Field(default_factory=datetime.now, index=True)
+    kind: str  # "post" | "vote" | "flag"
+    post_id: Optional[uuid.UUID] = Field(default=None)
+
+
 class Flag(SQLModel, table=True):
     __table_args__ = (UniqueConstraint("created_by_id", "post_id"),)
 

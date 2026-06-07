@@ -22,6 +22,7 @@ from app.models.models import (
     AdminTopPoster,
     AdminUserItem,
     BanMode,
+    Event,
     Flag,
     Post,
     PostCreate,
@@ -144,6 +145,12 @@ def push_notification(user: User, message: str):
         logger.warning("Push failed: %r", ex)
 
 
+def record_event(session: Session, kind: str, post_id: Optional[uuid.UUID]) -> None:
+    """Append a feed event. Added to the caller's transaction so it commits
+    atomically with the write it describes; SSE streams poll these rows."""
+    session.add(Event(kind=kind, post_id=post_id))
+
+
 def get_user_by_id(session: Session, user_id: str) -> User:
     user = session.exec(select(User).where(User.id == uuid.UUID(user_id))).first()
     if user is None:
@@ -216,6 +223,7 @@ def create_post(session: Session, user: User, data: PostCreate) -> Post:
             content=data.content,
         )
         session.add(post)
+        record_event(session, "post", post.id)
         session.commit()
         session.refresh(post)
     except sqlalchemy.exc.IntegrityError as e:
@@ -233,6 +241,7 @@ def vote_post(session: Session, user: User, post: uuid.UUID, value: Literal[-1, 
 
     if value == 0 and vote:
         session.delete(vote)
+        record_event(session, "vote", post)
         session.commit()
         return
     elif value == 0:
@@ -245,6 +254,7 @@ def vote_post(session: Session, user: User, post: uuid.UUID, value: Literal[-1, 
             vote = Vote(post_id=post, value=value, created_by_id=user.id)
 
         session.add(vote)
+        record_event(session, "vote", post)
         session.commit()
         session.refresh(vote)
 
@@ -269,6 +279,7 @@ def flag_post(session: Session, user: User, post: uuid.UUID, notice: str):
     try:
         flag = Flag(post_id=post, created_by_id=user.id, notice=notice)
         session.add(flag)
+        record_event(session, "flag", post)
         session.commit()
         session.refresh(flag)
         return flag

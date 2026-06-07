@@ -1,3 +1,4 @@
+import { dev } from '$app/environment';
 import {
 	getPostsApiV1PostsGet,
 	getVotesApiV1PostsVotesGet,
@@ -34,3 +35,28 @@ export const refreshVotes = () => {
 		all_votes.val = data!;
 	});
 };
+
+// SSE base: cross-origin to the backend in dev, same-origin in prod (matches the
+// generated client's baseUrl handling). EventSource sends the `auth` cookie with
+// withCredentials; the backend CORS already allows credentials.
+const SSE_BASE = dev ? 'http://localhost:8000' : '';
+
+// Open a Server-Sent Events stream that pushes new post/vote/flag events, and
+// refetch (debounced) when one arrives. Returns a disconnect function.
+export function connectFeedStream(): () => void {
+	const es = new EventSource(`${SSE_BASE}/api/v1/posts/stream`, { withCredentials: true });
+	let timer: ReturnType<typeof setTimeout> | undefined;
+	const refresh = () => {
+		clearTimeout(timer);
+		timer = setTimeout(() => {
+			refreshPosts();
+			refreshVotes();
+		}, 250);
+	};
+	es.onmessage = refresh; // default (unnamed) events
+	for (const kind of ['post', 'vote', 'flag']) es.addEventListener(kind, refresh);
+	return () => {
+		clearTimeout(timer);
+		es.close();
+	};
+}

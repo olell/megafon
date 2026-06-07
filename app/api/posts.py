@@ -1,12 +1,16 @@
+import asyncio
 from typing import Literal, Optional
 import uuid
-from fastapi import APIRouter, BackgroundTasks, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, status
+from fastapi.responses import StreamingResponse
 from datetime import datetime
 
 from pydantic import BaseModel
+from sqlalchemy import func
+from sqlmodel import Session, select
 
 from app.api.deps import CurrentUser
-from app.core.db import SessionDep
+from app.core.db import SessionDep, engine
 from app.models.crud import (
     flag_post,
     get_post_by_id,
@@ -15,9 +19,12 @@ from app.models.crud import (
     schedule_notifications,
     vote_post,
 )
-from app.models.models import BanMode, Post, PostCreate, PostWithChildren, Vote
+from app.models.models import BanMode, Event, Post, PostCreate, PostWithChildren, Vote
 
 router = APIRouter(prefix="/posts")
+
+# How often each SSE stream polls the event log for new rows.
+STREAM_POLL_SECONDS = 1.5
 
 
 class VoteData(BaseModel):
@@ -98,3 +105,53 @@ def get_votes(*, session: SessionDep, user: CurrentUser) -> list[Vote]:
 def flag(*, session: SessionDep, user: CurrentUser, data: FlagData):
     flag_post(session, user, data.post, data.notice)
     return {"detail": "OK"}
+
+
+@router.get("/stream")
+async def stream(request: Request, user: CurrentUser):
+    """Server-Sent Events feed. Streams new post/vote/flag events so clients can
+    refresh instead of polling. Auth is the normal `auth` cookie via CurrentUser.
+
+    The event id is the autoincrement Event.id; the browser's EventSource sends
+    it back as Last-Event-ID on reconnect, so missed events replay automatically.
+    """
+    last_id_hdr = request.headers.get("last-event-id")
+
+    async def gen():
+        # No Last-Event-ID (fresh connect): start at the current max id and emit
+        # only future events — the client already loaded the feed via the REST
+        # endpoint, so there's nothing to replay.
+        with Session(engine) as s:
+            if last_id_hdr and last_id_hdr.isdigit():
+                cursor = int(last_id_hdr)
+            else:
+                cursor = s.exec(select(func.coalesce(func.max(Event.id), 0))).one()
+
+        yield ": connected\n\n"
+
+        while not await request.is_disconnected():
+            with Session(engine) as s:
+                rows = s.exec(
+                    select(Event).where(Event.id > cursor).order_by(Event.id)
+                ).all()
+
+            if rows:
+                for ev in rows:
+                    cursor = ev.id
+                    yield f"id: {ev.id}\nevent: {ev.kind}\ndata: {ev.post_id}\n\n"
+            else:
+                # Heartbeat: keeps proxies from closing the idle connection and
+                # lets the server notice a dropped client on the next write.
+                yield ": ping\n\n"
+
+            await asyncio.sleep(STREAM_POLL_SECONDS)
+
+    return StreamingResponse(
+        gen(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        },
+    )

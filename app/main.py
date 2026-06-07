@@ -1,16 +1,37 @@
+import asyncio
 from contextlib import asynccontextmanager
+from datetime import datetime, timedelta
 import logging
 from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import delete
 from sqlmodel import Session
 
 from app.core.config import settings
 from app.core.db import drop_db, engine, init_db
+from app.models.models import Event
 from app.api.main import router as api_router
 from app.api.metrics import router as metrics_router
+
+# Feed events older than this are pruned; only recent ones are ever replayed.
+EVENT_RETENTION_HOURS = 24
+
+
+async def _prune_events():
+    """Periodically drop stale rows from the SSE event log so it can't grow
+    unbounded. Runs in every worker; the DELETE is idempotent."""
+    while True:
+        await asyncio.sleep(3600)
+        try:
+            with Session(engine) as session:
+                cutoff = datetime.now() - timedelta(hours=EVENT_RETENTION_HOURS)
+                session.execute(delete(Event).where(Event.created_at < cutoff))
+                session.commit()
+        except Exception:
+            logger.exception("Event log prune failed")
 
 
 @asynccontextmanager
@@ -18,7 +39,11 @@ async def lifespan(app: FastAPI):
     with Session(engine) as session:
         init_db(session)
 
+    prune_task = asyncio.create_task(_prune_events())
+
     yield
+
+    prune_task.cancel()
 
     if settings.LIFESPAN_DROP_DB:
         drop_db(engine)
