@@ -93,6 +93,9 @@ class Post(SQLModel, table=True):
     # Admin soft-hide: kept in the DB / history but removed from the public feed.
     hidden: bool = Field(default=False)
 
+    # Set when the author edits the post; null means never edited.
+    edited_at: Optional[datetime] = Field(default=None)
+
     votes: list["Vote"] = Relationship(back_populates="post")
     flags: list["Flag"] = Relationship(back_populates="post")
     children: list["Post"] = Relationship(back_populates="parent")
@@ -101,8 +104,10 @@ class Post(SQLModel, table=True):
 class PostWithChildren(BaseModel):
     id: uuid.UUID
     created_at: datetime
+    edited_at: Optional[datetime] = None
     content: str
     parent_id: Optional[uuid.UUID]
+    created_by_id: Optional[uuid.UUID]
     created_by_name: str
     upvotes: int
     downvotes: int
@@ -115,6 +120,10 @@ PostWithChildren.model_rebuild()
 
 class PostCreate(BaseModel):
     parent: Optional[uuid.UUID] = None
+    content: str
+
+
+class PostUpdate(BaseModel):
     content: str
 
 

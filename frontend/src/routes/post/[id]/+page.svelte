@@ -14,6 +14,7 @@
 	import { page } from '$app/state';
 	import { push_api_error } from '../../../messageService.svelte';
 	import { base } from '$app/paths';
+	import { goto } from '$app/navigation';
 
 	let createPostOpen = $state(false);
 
@@ -38,7 +39,7 @@
 		if (id === 'top' || !id) {
 			await Promise.all([refreshPosts(), refreshVotes()]);
 		} else {
-			await Promise.all([loadThread(id), refreshVotes()]);
+			await Promise.all([loadThread(id!), refreshVotes()]);
 		}
 	};
 
@@ -68,7 +69,7 @@
 				clearInterval(fallback);
 			};
 		} else {
-			loadThread(id);
+			loadThread(id!);
 		}
 	});
 </script>
@@ -94,17 +95,22 @@
 				</a>
 			{/if}
 		</div>
-		<PostComponent post={parent} isParent={true} />
+		<PostComponent
+			post={parent}
+			isParent={true}
+			onchange={() => loadThread(id!)}
+			ondelete={() => goto(`${base}/post/${parent!.parent_id ?? 'top'}`)}
+		/>
 
 		<div>
 			{#each parent.children ?? [] as post (post.id)}
-				<PostComponent {post} isParent={false} />
+				<PostComponent {post} isParent={false} onchange={() => loadThread(id!)} />
 			{/each}
 		</div>
 	{:else if all_posts.val.length}
 		<div>
 			{#each all_posts.val as post (post.id)}
-				<PostComponent {post} isParent={false} />
+				<PostComponent {post} isParent={false} onchange={refreshPosts} />
 			{/each}
 		</div>
 	{:else}

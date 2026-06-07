@@ -12,14 +12,24 @@ from sqlmodel import Session, select
 from app.api.deps import CurrentUser
 from app.core.db import SessionDep, engine
 from app.models.crud import (
+    delete_own_post,
     flag_post,
     get_post_by_id,
     get_posts_by_timespan,
     create_post as crud_create_post,
     schedule_notifications,
+    update_post,
     vote_post,
 )
-from app.models.models import BanMode, Event, Post, PostCreate, PostWithChildren, Vote
+from app.models.models import (
+    BanMode,
+    Event,
+    Post,
+    PostCreate,
+    PostUpdate,
+    PostWithChildren,
+    Vote,
+)
 
 router = APIRouter(prefix="/posts")
 
@@ -86,6 +96,19 @@ def create_post(
     post = crud_create_post(session, user, data)
     background_tasks.add_task(schedule_notifications, post_id=post.id)
     return post
+
+
+@router.put("/{post_id}")
+def edit_post(
+    *, session: SessionDep, user: CurrentUser, post_id: uuid.UUID, data: PostUpdate
+):
+    return update_post(session, user, post_id, data.content)
+
+
+@router.delete("/{post_id}")
+def delete_post(*, session: SessionDep, user: CurrentUser, post_id: uuid.UUID):
+    delete_own_post(session, user, post_id)
+    return {"detail": "OK"}
 
 
 @router.post("/vote")

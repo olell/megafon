@@ -289,6 +289,55 @@ def flag_post(session: Session, user: User, post: uuid.UUID, notice: str):
         )
 
 
+def update_post(session: Session, user: User, post_id: uuid.UUID, content: str) -> Post:
+    """Edit the content of a post the caller owns. A reported post is locked so it
+    stays intact for moderation. Records a feed event so SSE clients refresh."""
+    post = get_post_by_id(session, post_id)
+
+    # Mirror the visibility 404 from the API: never reveal someone else's post.
+    if post.created_by_id != user.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Post not found!"
+        )
+    if post.flags:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Post has been reported and can't be edited!",
+        )
+    if len(content.strip()) < 2:
+        raise HTTPException(
+            status_code=status.HTTP_406_NOT_ACCEPTABLE, detail="Content too short!"
+        )
+
+    post.content = content
+    post.edited_at = datetime.now()
+    session.add(post)
+    record_event(session, "post", post.id)
+    session.commit()
+    session.refresh(post)
+    return post
+
+
+def delete_own_post(session: Session, user: User, post_id: uuid.UUID) -> None:
+    """Delete a post the caller owns, cascading to its replies, votes and flags.
+    A reported post is locked so it stays intact for moderation."""
+    post = get_post_by_id(session, post_id)
+
+    if post.created_by_id != user.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Post not found!"
+        )
+    if post.flags:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Post has been reported and can't be deleted!",
+        )
+
+    # Recorded before the cascade (which commits) so other clients' feeds refresh.
+    record_event(session, "post", post_id)
+    delete_post_cascade(session, post_id)
+
+
 # ============================================================================
 #  ADMIN
 # ============================================================================

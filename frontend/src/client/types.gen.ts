@@ -319,6 +319,10 @@ export type Post = {
      */
     hidden?: boolean;
     /**
+     * Edited At
+     */
+    edited_at?: string | null;
+    /**
      * Created By Name
      */
     readonly created_by_name: string;
@@ -351,6 +355,16 @@ export type PostCreate = {
 };
 
 /**
+ * PostUpdate
+ */
+export type PostUpdate = {
+    /**
+     * Content
+     */
+    content: string;
+};
+
+/**
  * PostWithChildren
  */
 export type PostWithChildren = {
@@ -363,6 +377,10 @@ export type PostWithChildren = {
      */
     created_at: string;
     /**
+     * Edited At
+     */
+    edited_at?: string | null;
+    /**
      * Content
      */
     content: string;
@@ -370,6 +388,10 @@ export type PostWithChildren = {
      * Parent Id
      */
     parent_id: string | null;
+    /**
+     * Created By Id
+     */
+    created_by_id: string | null;
     /**
      * Created By Name
      */
@@ -608,6 +630,62 @@ export type CreatePostApiV1PostsPostResponses = {
     200: unknown;
 };
 
+export type DeletePostApiV1PostsPostIdDeleteData = {
+    body?: never;
+    path: {
+        /**
+         * Post Id
+         */
+        post_id: string;
+    };
+    query?: never;
+    url: '/api/v1/posts/{post_id}';
+};
+
+export type DeletePostApiV1PostsPostIdDeleteErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DeletePostApiV1PostsPostIdDeleteError = DeletePostApiV1PostsPostIdDeleteErrors[keyof DeletePostApiV1PostsPostIdDeleteErrors];
+
+export type DeletePostApiV1PostsPostIdDeleteResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
+
+export type EditPostApiV1PostsPostIdPutData = {
+    body: PostUpdate;
+    path: {
+        /**
+         * Post Id
+         */
+        post_id: string;
+    };
+    query?: never;
+    url: '/api/v1/posts/{post_id}';
+};
+
+export type EditPostApiV1PostsPostIdPutErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type EditPostApiV1PostsPostIdPutError = EditPostApiV1PostsPostIdPutErrors[keyof EditPostApiV1PostsPostIdPutErrors];
+
+export type EditPostApiV1PostsPostIdPutResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
+
 export type VoteApiV1PostsVotePostData = {
     body: VoteData;
     path?: never;
@@ -665,6 +743,20 @@ export type FlagApiV1PostsFlagPostErrors = {
 export type FlagApiV1PostsFlagPostError = FlagApiV1PostsFlagPostErrors[keyof FlagApiV1PostsFlagPostErrors];
 
 export type FlagApiV1PostsFlagPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
+
+export type StreamApiV1PostsStreamGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/posts/stream';
+};
+
+export type StreamApiV1PostsStreamGetResponses = {
     /**
      * Successful Response
      */
@@ -1081,6 +1173,20 @@ export type AdminStatsApiV1AdminStatsGetResponses = {
 
 export type AdminStatsApiV1AdminStatsGetResponse = AdminStatsApiV1AdminStatsGetResponses[keyof AdminStatsApiV1AdminStatsGetResponses];
 
+export type MetricsMetricsGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/metrics';
+};
+
+export type MetricsMetricsGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
+
 export type IndexGetData = {
     body?: never;
     path?: never;
@@ -1096,5 +1202,5 @@ export type IndexGetResponses = {
 };
 
 export type ClientOptions = {
-    baseUrl: 'http://localhost:8000' | (string & {});
+    baseUrl: `${string}://${string}` | (string & {});
 };
