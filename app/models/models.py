@@ -52,6 +52,17 @@ class UserPublic(BaseModel):
     is_moderator: bool
 
 
+class CommentPreview(BaseModel):
+    """Compact, non-recursive shape for the feed's top-comments preview."""
+
+    id: uuid.UUID
+    created_by_id: Optional[uuid.UUID]
+    created_by_name: str
+    content: str
+    upvotes: int
+    downvotes: int
+
+
 class Post(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
 
@@ -87,6 +98,25 @@ class Post(SQLModel, table=True):
     @property
     def children_count(self) -> int:
         return sum([c.children_count for c in self.children]) + len(self.children)
+
+    @computed_field
+    @property
+    def top_comments(self) -> list[CommentPreview]:
+        # The two highest-scored direct replies, for a compact feed preview.
+        # Mirrors the feed's own visibility rules (skip admin-hidden / flagged).
+        visible = [c for c in self.children if not c.hidden and not c.flags]
+        visible.sort(key=lambda c: c.upvotes - c.downvotes, reverse=True)
+        return [
+            CommentPreview(
+                id=c.id,
+                created_by_id=c.created_by_id,
+                created_by_name=c.created_by_name,
+                content=c.content,
+                upvotes=c.upvotes,
+                downvotes=c.downvotes,
+            )
+            for c in visible[:2]
+        ]
 
     content: str
 

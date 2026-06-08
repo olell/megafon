@@ -1,12 +1,15 @@
 from datetime import datetime, timedelta, timezone
+import hashlib
+from typing import Literal
 from fastapi import APIRouter, Response
 import jwt
 from pydantic import BaseModel
 
 from app.api.deps import CurrentUser
+from app.core.avatar import identicon_svg
 from app.core.db import SessionDep
 from app.core.config import settings
-from app.models.crud import create_user
+from app.models.crud import create_user, search_usernames
 from app.models.models import UserPublic
 
 router = APIRouter(prefix="/user")
@@ -46,3 +49,26 @@ def init_session(
 @router.get("/")
 def get_session(*, session: SessionDep, user: CurrentUser) -> UserPublic:
     return user
+
+
+@router.get("/search")
+def search_users(
+    *, session: SessionDep, user: CurrentUser, q: str, limit: int = 8
+) -> list[str]:
+    return search_usernames(session, q, limit)
+
+
+@router.get("/avatar/{seed}")
+def user_avatar(*, seed: str, theme: Literal["light", "dark"] = "light") -> Response:
+    # Public + unauthenticated so plain <img> tags work. The output is a pure,
+    # deterministic function of (seed, theme) and exposes nothing about the user,
+    # so it caches forever (the avatar for a given seed/theme never changes).
+    dark = theme == "dark"
+    return Response(
+        content=identicon_svg(seed, dark),
+        media_type="image/svg+xml",
+        headers={
+            "Cache-Control": "public, max-age=31536000, immutable",
+            "ETag": '"' + hashlib.sha256(f"{theme}:{seed}".encode()).hexdigest()[:16] + '"',
+        },
+    )

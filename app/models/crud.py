@@ -48,6 +48,30 @@ def create_user(session: Session, username: str) -> User:
     return user
 
 
+def search_usernames(session: Session, q: str, limit: int = 8) -> list[str]:
+    """Prefix-match usernames for @mention autocomplete. Names are deduped
+    (the same name can be registered by several users) and kick in from the
+    first character."""
+    q = q.strip()
+    if len(q) < 1:
+        return []
+    names = list(
+        session.exec(
+            select(User.name)
+            .where(User.name.ilike(f"{q}%"))
+            .distinct()
+            .order_by(User.name)
+            .limit(limit)
+        ).all()
+    )
+    # "@all" is a broadcast pseudo-mention handled in schedule_notifications;
+    # surface it as a completion (first) when it matches the prefix.
+    if "all".startswith(q.lower()) and "all" not in names:
+        names.insert(0, "all")
+        names = names[:limit]
+    return names
+
+
 def subscribe_user(
     session: Session, user: User, subscription: str, mode: SubscriptionMode
 ):

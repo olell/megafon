@@ -1,14 +1,22 @@
 <script lang="ts">
-	import { Button, Helper, Modal, Textarea } from 'flowbite-svelte';
+	import { Button, Helper, Modal } from 'flowbite-svelte';
 	import { BullhornSolid } from 'flowbite-svelte-icons';
 	import { push_api_error, push_message } from '../messageService.svelte';
 	import { createPostApiV1PostsPost, type Post, type PostWithChildren } from '../client';
 	import { refreshPosts } from '../sharedState.svelte';
+	import MentionTextarea from './mentionTextarea.svelte';
 
 	let {
 		open = $bindable(),
-		parent
-	}: { open: boolean; parent: Post | PostWithChildren | undefined } = $props();
+		parent,
+		onposted
+	}: {
+		open: boolean;
+		parent: Post | PostWithChildren | undefined;
+		// Called after a successful post; defaults to refreshing the feed. The
+		// thread view passes its own reloader so nested replies show up live.
+		onposted?: () => void;
+	} = $props();
 	let value = $state('');
 
 	$effect(() => {
@@ -50,7 +58,7 @@
 
 		open = false;
 		value = '';
-		refreshPosts();
+		(onposted ?? refreshPosts)();
 	};
 </script>
 
@@ -62,14 +70,7 @@
 	class="w-[calc(100%-2rem)]"
 >
 	<form onsubmit={handlePost} class="flex flex-col gap-3">
-		<Textarea
-			rows={4}
-			maxlength={500}
-			placeholder="Was möchtest du sagen?"
-			bind:value
-			required
-			class="w-full resize-none"
-		/>
+		<MentionTextarea rows={4} maxlength={500} placeholder="Was möchtest du sagen?" bind:value />
 		<Helper class="text-right">{value.length} / 500</Helper>
 		<Button type="submit" color="primary" class="self-end gap-2 font-bold">
 			<BullhornSolid class="h-4 w-4" /> Posten!

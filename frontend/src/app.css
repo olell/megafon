@@ -54,8 +54,11 @@
 /* Flat solid page backdrop. */
 html {
 	min-height: 100%;
-	/* Disable the browser's own pull-to-refresh; the app provides its own. */
-	overscroll-behavior-y: contain;
+	/* Disable the browser's own pull-to-refresh (the app provides its own) and
+	 * the horizontal overscroll back/forward gesture. Note: overscroll-behavior-x
+	 * suppresses this reliably on Android/Chrome; iOS Safari's edge swipe-back is
+	 * largely unaffected (mitigated instead by display:standalone in the manifest). */
+	overscroll-behavior: none;
 }
 
 body {

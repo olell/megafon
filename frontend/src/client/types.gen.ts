@@ -257,6 +257,37 @@ export type BanData = {
 export type BanMode = 'none' | 'blocked' | 'blocked_hidden' | 'shadow';
 
 /**
+ * CommentPreview
+ * Compact, non-recursive shape for the feed's top-comments preview.
+ */
+export type CommentPreview = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Created By Id
+     */
+    created_by_id: string | null;
+    /**
+     * Created By Name
+     */
+    created_by_name: string;
+    /**
+     * Content
+     */
+    content: string;
+    /**
+     * Upvotes
+     */
+    upvotes: number;
+    /**
+     * Downvotes
+     */
+    downvotes: number;
+};
+
+/**
  * FlagData
  */
 export type FlagData = {
@@ -338,6 +369,10 @@ export type Post = {
      * Children Count
      */
     readonly children_count: number;
+    /**
+     * Top Comments
+     */
+    readonly top_comments: Array<CommentPreview>;
 };
 
 /**
@@ -803,6 +838,74 @@ export type InitSessionApiV1UserPostResponses = {
 };
 
 export type InitSessionApiV1UserPostResponse = InitSessionApiV1UserPostResponses[keyof InitSessionApiV1UserPostResponses];
+
+export type SearchUsersApiV1UserSearchGetData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Q
+         */
+        q: string;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/api/v1/user/search';
+};
+
+export type SearchUsersApiV1UserSearchGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SearchUsersApiV1UserSearchGetError = SearchUsersApiV1UserSearchGetErrors[keyof SearchUsersApiV1UserSearchGetErrors];
+
+export type SearchUsersApiV1UserSearchGetResponses = {
+    /**
+     * Response Search Users Api V1 User Search Get
+     * Successful Response
+     */
+    200: Array<string>;
+};
+
+export type SearchUsersApiV1UserSearchGetResponse = SearchUsersApiV1UserSearchGetResponses[keyof SearchUsersApiV1UserSearchGetResponses];
+
+export type UserAvatarApiV1UserAvatarSeedGetData = {
+    body?: never;
+    path: {
+        /**
+         * Seed
+         */
+        seed: string;
+    };
+    query?: {
+        /**
+         * Theme
+         */
+        theme?: 'light' | 'dark';
+    };
+    url: '/api/v1/user/avatar/{seed}';
+};
+
+export type UserAvatarApiV1UserAvatarSeedGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UserAvatarApiV1UserAvatarSeedGetError = UserAvatarApiV1UserAvatarSeedGetErrors[keyof UserAvatarApiV1UserAvatarSeedGetErrors];
+
+export type UserAvatarApiV1UserAvatarSeedGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
 
 export type GetVapidPublicKeyApiV1NotifyVapidPublicKeyGetData = {
     body?: never;

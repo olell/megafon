@@ -41,17 +41,21 @@ export const refreshVotes = () => {
 // withCredentials; the backend CORS already allows credentials.
 const SSE_BASE = dev ? 'http://localhost:8000' : '';
 
+// Default reaction to a stream event: refetch the feed and the user's votes.
+const defaultRefresh = () => {
+	refreshPosts();
+	refreshVotes();
+};
+
 // Open a Server-Sent Events stream that pushes new post/vote/flag events, and
-// refetch (debounced) when one arrives. Returns a disconnect function.
-export function connectFeedStream(): () => void {
+// run `onEvent` (debounced) when one arrives. The thread view passes its own
+// reloader so it stays live too. Returns a disconnect function.
+export function connectFeedStream(onEvent: () => void = defaultRefresh): () => void {
 	const es = new EventSource(`${SSE_BASE}/api/v1/posts/stream`, { withCredentials: true });
 	let timer: ReturnType<typeof setTimeout> | undefined;
 	const refresh = () => {
 		clearTimeout(timer);
-		timer = setTimeout(() => {
-			refreshPosts();
-			refreshVotes();
-		}, 250);
+		timer = setTimeout(onEvent, 250);
 	};
 	es.onmessage = refresh; // default (unnamed) events
 	for (const kind of ['post', 'vote', 'flag']) es.addEventListener(kind, refresh);

@@ -1,8 +1,9 @@
 <script lang="ts">
-	import { Button, Helper, Modal, Textarea } from 'flowbite-svelte';
+	import { Button, Helper, Modal } from 'flowbite-svelte';
 	import { BullhornSolid } from 'flowbite-svelte-icons';
 	import { push_api_error, push_message } from '../messageService.svelte';
 	import { editPostApiV1PostsPostIdPut, type Post, type PostWithChildren } from '../client';
+	import MentionTextarea from './mentionTextarea.svelte';
 
 	let {
 		open = $bindable(),
@@ -53,14 +54,7 @@
 
 <Modal title="Beitrag bearbeiten" bind:open outsideclose={false} size="sm" class="w-[calc(100%-2rem)]">
 	<form onsubmit={handleEdit} class="flex flex-col gap-3">
-		<Textarea
-			rows={4}
-			maxlength={500}
-			placeholder="Was möchtest du sagen?"
-			bind:value
-			required
-			class="w-full resize-none"
-		/>
+		<MentionTextarea rows={4} maxlength={500} placeholder="Was möchtest du sagen?" bind:value />
 		<Helper class="text-right">{value.length} / 500</Helper>
 		<Button type="submit" color="primary" class="self-end gap-2 font-bold">
 			<BullhornSolid class="h-4 w-4" /> Speichern
